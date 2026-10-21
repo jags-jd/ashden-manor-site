@@ -191,7 +191,7 @@ Claude writes all page copy from the brief above.
 - **Concrete over abstract.** "Nobody else checks in that weekend" beats "unparalleled exclusivity."
 - **Talk to the couple** ("you", "your guests").
 - **Short paragraphs.** Headlines under ~8 words.
-- **Avoid wedding clichés:** bespoke, fairytale, dream day, magical, once in a lifetime, nestled, picture-perfect, tie the knot, say "I do", happily ever after, breathtaking, stunning, unforgettable, luxury/luxurious (show it, don't say it).
+- **Avoid wedding clichés:** bespoke, fairytale, dream day, magical, once in a lifetime, nestled, picture-perfect, tie the knot, say "I do", happily ever after, breathtaking, stunning, luxury/luxurious (show it, don't say it).
 - **Never invent facts** (see Venue facts). Use `[TBC: ...]` placeholders.
 - Keep all copy in `src/data/content.ts` (or Markdown in `src/content/`) so it can be edited without touching components.
 
