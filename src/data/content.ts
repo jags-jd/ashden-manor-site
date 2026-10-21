@@ -175,7 +175,7 @@ export const yourDay = {
 
 export const pets = {
   label: 'Pets welcome',
-  heading: 'Bring the dog',
+  heading: 'Four-legged guests welcome',
   body: 'Ashden Manor is pet-friendly. If your dog is part of the family, they can be part of the day. Ring-bearer duties optional.',
   note: '[TBC: any house rules for pets]',
 } as const;
