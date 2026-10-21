@@ -1,0 +1,17 @@
+---
+/** Enquiry section. The form itself is built in session 5; this holds its heading and intro. */
+import SectionHeader from './SectionHeader.astro';
+import { enquire } from '../data/content';
+---
+
+<section id="enquire" class="section theme-chalk" aria-labelledby="enquire-heading">
+  <div class="container">
+    <SectionHeader
+      sectionId="enquire"
+      label={enquire.label}
+      heading={enquire.heading}
+      headingId="enquire-heading"
+      body={enquire.intro}
+    />
+  </div>
+</section>

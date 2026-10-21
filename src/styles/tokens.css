@@ -49,10 +49,13 @@
   --text-lg: clamp(1.375rem, 1.3rem + 0.35vw, 1.5rem); /* 22–24px: lead paragraphs */
   --text-xl: clamp(1.5rem, 1.35rem + 0.65vw, 1.875rem); /* 24–30px: small headings */
   --text-2xl: clamp(1.875rem, 1.6rem + 1.2vw, 2.5rem); /* 30–40px: section headings */
-  --text-3xl: clamp(2.25rem, 1.8rem + 2vw, 3.5rem); /* 36–56px: hero */
+  --text-3xl: clamp(2.25rem, 1.8rem + 2vw, 3.5rem); /* 36–56px */
+  --text-4xl: clamp(2.5rem, 1.5rem + 3.4vw, 4.75rem); /* 40–76px: section headlines */
+  --text-display: clamp(6rem, 2rem + 16vw, 16rem); /* single display figures, e.g. the guest count */
 
   --leading-body: 1.6;
   --leading-tight: 1.2;
+  --leading-display: 1.04;
   --tracking-display: 0.12em; /* Cinzel headings */
   --tracking-label: 0.18em; /* Cinzel small labels */
 
@@ -70,23 +73,40 @@
 
   /* Layout */
   --gutter: var(--space-4); /* 16px side gutter on phones */
-  --section-pad: clamp(var(--space-8), 6vw + 2rem, var(--space-10));
+  /* Generous: the page relies on breathing room rather than decoration. */
+  /* Also capped by height, so short laptop screens don't spend half the screen on padding. */
+  --section-pad: clamp(4.5rem, min(9vw + 2rem, 15svh), 14rem);
   --measure: 36rem; /* comfortable line length for Cormorant at 20px */
   --content-max: 72rem;
   --header-height: 4rem;
+  /* Floating header: gap above the pill, and the pill's height. */
+  --header-top: var(--space-3);
+  --header-pill: 2.875rem;
 
   /* Rules and radii */
   --rule: 1px solid var(--bronze);
   --radius: 2px;
+  --radius-pill: 999px;
+  /* Georgian arched window, for portrait photos. */
+  --arch: 999px 999px var(--radius) var(--radius);
 
   /* Motion */
   --duration: 400ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (min-width: 48rem) {
   :root {
     --gutter: var(--space-6);
     --header-height: 4.5rem;
+    --header-pill: 3.125rem;
+    --header-top: var(--space-4);
+  }
+}
+
+@media (min-width: 80rem) {
+  :root {
+    --gutter: var(--space-8);
   }
 }

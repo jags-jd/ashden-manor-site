@@ -1,0 +1,12 @@
+---
+/** Renders a copy string, marking any [TBC: ...] placeholders so they stand out until filled in. */
+import { splitTbc } from '../lib/tbc';
+
+interface Props {
+  text: string;
+}
+
+const segments = splitTbc(Astro.props.text);
+---
+
+{segments.map((s) => (s.tbc ? <span class="tbc">{s.text}</span> : s.text))}

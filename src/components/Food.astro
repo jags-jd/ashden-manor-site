@@ -1,0 +1,94 @@
+---
+/**
+ * The food: a staggered collage of three photos drifting at different speeds, beside one
+ * headline and a short paragraph. The headline is Antique Bronze on Ink (4.1:1), which is
+ * only allowed because it's large display text.
+ */
+import Copy from './Copy.astro';
+import Cta from './Cta.astro';
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { food } from '../data/content';
+import { photos } from '../data/photos';
+
+const [first, second, third] = food.photos;
+---
+
+<section id="food" class="section theme-ink" aria-labelledby="food-heading" data-stack>
+  <div class="container layout">
+    <div class="text">
+      <SectionHeader
+        class="food-header"
+        sectionId="food"
+        label={food.label}
+        heading={food.heading}
+        headingId="food-heading"
+        body={food.body}
+      />
+      <p class="menu-note" data-reveal><Copy text={food.menuNote} /></p>
+      <div data-reveal>
+        <Cta href={food.cta.href} label={food.cta.label} />
+      </div>
+    </div>
+
+    <div class="collage">
+      <Photo class="one" photo={photos[first]} ratio="3 / 4" shape="arch" reveal parallax={0.6} sizes="(min-width: 56rem) 24vw, 60vw" />
+      <Photo class="two" photo={photos[second]} ratio="3 / 4" reveal parallax={1.4} sizes="(min-width: 56rem) 20vw, 50vw" />
+      <Photo class="three" photo={photos[third]} ratio="4 / 5" reveal parallax={1} sizes="(min-width: 56rem) 16vw, 40vw" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-7);
+    align-content: center;
+  }
+
+  .text :global(.food-header h2) {
+    color: var(--bronze);
+  }
+
+  .menu-note {
+    color: var(--stone);
+  }
+
+  /* Three photos, overlapping slightly at different heights. */
+  .collage {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(12, minmax(1.5rem, auto));
+  }
+
+  .collage :global(.one) {
+    grid-column: 1 / 8;
+    grid-row: 1 / 10;
+  }
+
+  .collage :global(.two) {
+    grid-column: 7 / 13;
+    grid-row: 4 / 12;
+    z-index: 1;
+    box-shadow: 0 2rem 4rem -2rem var(--ink);
+  }
+
+  .collage :global(.three) {
+    grid-column: 3 / 7;
+    grid-row: 9 / 13;
+    z-index: 2;
+  }
+
+  @media (min-width: 56rem) {
+    .layout {
+      grid-template-columns: 5fr 7fr;
+      column-gap: var(--space-10);
+      align-items: center;
+    }
+  }
+</style>

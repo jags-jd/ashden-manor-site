@@ -1,0 +1,52 @@
+---
+/**
+ * Intro loader: the monogram and a 0–100% counter while fonts and the hero photo load, then a
+ * curtain lifts (motion.ts). Shown once per visit, and only when motion is allowed (the `intro`
+ * class is set in Base.astro). If the script never runs, a CSS failsafe hides it after 4s.
+ */
+import { Image } from 'astro:assets';
+import monogram from '../assets/brand/monogram-bronze.png';
+import { preloader } from '../data/content';
+---
+
+<div class="preloader theme-ink" aria-hidden="true" data-preloader>
+  <Image class="mark" src={monogram} alt="" width={96} loading="eager" />
+  <p class="label count"><span data-preloader-count>0</span>%</p>
+  <span class="visually-hidden">{preloader.label}</span>
+</div>
+
+<style>
+  .preloader {
+    display: none;
+  }
+
+  :global(html.intro) .preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: var(--space-5);
+    animation: preloader-failsafe 0.01s linear 4s forwards;
+  }
+
+  .mark {
+    width: 3.5rem;
+    height: auto;
+  }
+
+  .count {
+    min-width: 4ch;
+    text-align: center;
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes preloader-failsafe {
+    to {
+      visibility: hidden;
+      opacity: 0;
+    }
+  }
+</style>

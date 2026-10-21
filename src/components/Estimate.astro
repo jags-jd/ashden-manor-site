@@ -1,0 +1,17 @@
+---
+/** Price estimator section. The estimator itself is built in session 4; this holds its heading and intro. */
+import SectionHeader from './SectionHeader.astro';
+import { estimate } from '../data/content';
+---
+
+<section id="estimate" class="section theme-olive" aria-labelledby="estimate-heading" data-stack>
+  <div class="container">
+    <SectionHeader
+      sectionId="estimate"
+      label={estimate.label}
+      heading={estimate.heading}
+      headingId="estimate-heading"
+      body={estimate.intro}
+    />
+  </div>
+</section>

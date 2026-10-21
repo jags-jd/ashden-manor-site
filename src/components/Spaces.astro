@@ -1,0 +1,314 @@
+---
+/**
+ * The spaces as tabs. Without JavaScript all four show as a list; the script turns them into
+ * an accessible tab set (arrow keys, Home and End), and motion.ts wipes the photos in.
+ * Desktop: a vertical list beside the photo. Phones: a row of pill tabs directly above a square
+ * photo, so the tabs, the photo and its line of text fit on one screen together.
+ */
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { spaces } from '../data/content';
+import { photos } from '../data/photos';
+---
+
+<section id="spaces" class="section theme-chalk" aria-labelledby="spaces-heading" data-stack>
+  <div class="container layout" data-tabs>
+    <div class="intro">
+      <SectionHeader
+        sectionId="spaces"
+        label={spaces.label}
+        heading={spaces.heading}
+        headingId="spaces-heading"
+        body={spaces.body}
+      />
+
+      <div class="tablist" aria-label={spaces.tabsLabel} data-tablist hidden>
+        {
+          spaces.items.map((item, i) => (
+            <button
+              class="tab"
+              type="button"
+              id={`tab-${item.id}`}
+              aria-controls={`panel-${item.id}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+              data-tab
+            >
+              <span class="label tab-number" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span class="tab-title">{item.title}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="panels">
+      {
+        spaces.items.map((item) => (
+          <div class="panel" id={`panel-${item.id}`} aria-labelledby={`tab-${item.id}`} data-panel>
+            <Photo
+              photo={photos[item.photo]}
+              ratio="4 / 5"
+              shape="arch"
+              reveal
+              sizes="(min-width: 56rem) 40vw, 100vw"
+            />
+            <div class="panel-text">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .intro {
+    display: grid;
+    align-content: start;
+    gap: var(--space-7);
+  }
+
+  /* No JavaScript: every space in a list. */
+  .panels {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .panel-text {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+  }
+
+  @media (min-width: 40rem) {
+    .panels {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-7) var(--space-5);
+    }
+  }
+
+  /* ---- Tabs (added by the script) ---- */
+  .tablist {
+    display: grid;
+    border-top: 1px solid var(--stone);
+  }
+
+  .tablist[hidden] {
+    display: none;
+  }
+
+  .tab {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    min-height: 3.5rem;
+    padding: var(--space-3) 0;
+    border: 0;
+    border-bottom: 1px solid var(--stone);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--ink) 72%, var(--chalk));
+    transition: color var(--duration) var(--ease);
+  }
+
+  .tab-number {
+    color: var(--deep-olive);
+  }
+
+  .tab-title {
+    position: relative;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Selected: full Ink and a bronze rule that draws in under the title. */
+  .tab-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.15em;
+    border-top: var(--rule);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .tab[aria-selected='true'],
+  .tab:hover {
+    color: var(--ink);
+  }
+
+  .tab[aria-selected='true'] .tab-title::after {
+    transform: scaleX(1);
+  }
+
+  .is-tabs .panels {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .is-tabs .panel {
+    grid-area: 1 / 1;
+  }
+
+  .is-tabs .panel[hidden] {
+    display: none;
+  }
+
+  .is-tabs .panel-text {
+    max-width: 30rem;
+  }
+
+  /* Phones and small tablets: tabs as a swipeable row of pills, right above the photo. */
+  @media (max-width: 55.99rem) {
+    .is-tabs.layout {
+      gap: var(--space-5);
+    }
+
+    .is-tabs .intro {
+      gap: var(--space-6);
+    }
+
+    .tablist {
+      display: flex;
+      gap: var(--space-2);
+      margin-inline: calc(-1 * var(--gutter));
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      border-top: 0;
+      scrollbar-width: none;
+    }
+
+    .tablist::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      flex: none;
+      align-items: center;
+      gap: var(--space-2);
+      min-height: 2.75rem;
+      padding: 0 var(--space-4);
+      border: 1px solid var(--stone);
+      border-radius: var(--radius-pill);
+      transition:
+        background-color var(--duration) var(--ease),
+        border-color var(--duration) var(--ease),
+        color var(--duration) var(--ease);
+    }
+
+    .tab-title {
+      font-size: var(--text-xs);
+    }
+
+    .tab-title::after {
+      display: none;
+    }
+
+    /* Selected: Soft Chalk on Deep Olive (9.5:1). */
+    .tab[aria-selected='true'] {
+      background: var(--deep-olive);
+      border-color: var(--deep-olive);
+      color: var(--chalk);
+    }
+
+    .tab[aria-selected='true'] .tab-number {
+      color: inherit;
+    }
+
+    .is-tabs .panel :global(.photo) {
+      aspect-ratio: 1;
+    }
+  }
+
+  /*
+   * Desktop: both columns sit on the same baseline, so when you reach the tabs the photo ends
+   * level with them, and its height is capped to what fits above that point on screen. Choosing
+   * a tab never changes a photo you can't see.
+   */
+  @media (min-width: 56rem) {
+    .layout {
+      grid-template-columns: 5fr 6fr;
+      column-gap: var(--space-10);
+      align-items: end;
+    }
+
+    .is-tabs .panel :global(.photo) {
+      max-height: calc(100svh - var(--section-pad) - 10rem);
+    }
+  }
+</style>
+
+<script>
+  import { switchPanel } from '../lib/motion';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tabs]')) {
+    const tablist = root.querySelector<HTMLElement>('[data-tablist]');
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+    if (!tablist || tabs.length !== panels.length) continue;
+
+    // Enhance: show the tab list, hide every panel but the first.
+    tablist.hidden = false;
+    tablist.setAttribute('role', 'tablist');
+    tabs.forEach((tab) => tab.setAttribute('role', 'tab'));
+    panels.forEach((panel, i) => {
+      panel.setAttribute('role', 'tabpanel');
+      panel.tabIndex = 0;
+      panel.hidden = i !== 0;
+      // The tab already names each panel, so its title is for the no-JS list only.
+      panel.querySelector('h3')?.classList.add('visually-hidden');
+    });
+    root.classList.add('is-tabs');
+
+    const select = (index: number, focus = true) => {
+      const current = panels.findIndex((p) => !p.hidden);
+      if (index === current) return;
+      tabs.forEach((tab, i) => {
+        const selected = i === index;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+      if (focus) tabs[index].focus();
+      switchPanel(panels[current], panels[index]);
+      // Keep the chosen tab and its photo in view (phones: the tab row scrolls sideways).
+      const smooth = window.matchMedia('(prefers-reduced-motion: no-preference)').matches ? 'smooth' : 'auto';
+      tabs[index].scrollIntoView({ behavior: smooth, block: 'nearest', inline: 'nearest' });
+      const box = panels[index].getBoundingClientRect();
+      if (box.bottom > window.innerHeight || box.top < 0) panels[index].scrollIntoView({ behavior: smooth, block: 'nearest' });
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(i, false));
+      tab.addEventListener('keydown', (event) => {
+        const last = tabs.length - 1;
+        const next = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: last }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        select((next + tabs.length) % tabs.length);
+      });
+    });
+  }
+</script>

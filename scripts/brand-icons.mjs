@@ -69,4 +69,31 @@ await sharp({ create: { width: 1200, height: 630, channels: 4, background: LINEN
   .jpeg({ quality: 88 })
   .toFile('public/og-image.jpg');
 
-console.log('Brand icons written to public/');
+// On-page crest: transparent, so it sits on any light section without a white box.
+// A Linen copy is written too, for dark sections.
+await sharp(fullLogo).toFile('src/assets/brand/logo-ink.png');
+const { data: inkPixels, info: inkInfo } = await sharp(fullLogo).raw().toBuffer({ resolveWithObject: true });
+const linenPixels = Buffer.from(inkPixels);
+for (let i = 0; i < linenPixels.length; i += 4) {
+  linenPixels[i] = LINEN.r;
+  linenPixels[i + 1] = LINEN.g;
+  linenPixels[i + 2] = LINEN.b;
+}
+await sharp(linenPixels, { raw: { width: inkInfo.width, height: inkInfo.height, channels: 4 } })
+  .png()
+  .toFile('src/assets/brand/logo-linen.png');
+
+// The AM monogram alone, transparent, for the floating header: Antique Bronze (a logo, so exempt from text contrast).
+const BRONZE = { r: 0x90, g: 0x7b, b: 0x60 };
+const { data: monoPixels, info: monoInfo } = await sharp(monogram).raw().toBuffer({ resolveWithObject: true });
+for (let i = 0; i < monoPixels.length; i += 4) {
+  monoPixels[i] = BRONZE.r;
+  monoPixels[i + 1] = BRONZE.g;
+  monoPixels[i + 2] = BRONZE.b;
+}
+await sharp(monoPixels, { raw: { width: monoInfo.width, height: monoInfo.height, channels: 4 } })
+  .trim()
+  .png()
+  .toFile('src/assets/brand/monogram-bronze.png');
+
+console.log('Brand icons written to public/, on-page crests and monogram to src/assets/brand/');

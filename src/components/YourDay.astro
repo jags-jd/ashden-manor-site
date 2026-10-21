@@ -1,0 +1,191 @@
+---
+/**
+ * Your day, start to finish. On desktop with motion allowed, motion.ts pins the section and
+ * scrolls the steps sideways (adds .is-horizontal). Otherwise it's a plain grid, so nothing is lost.
+ * The only link sits in the intro panel, which is on screen when the pin starts.
+ */
+import Copy from './Copy.astro';
+import Cta from './Cta.astro';
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { yourDay } from '../data/content';
+import { photos } from '../data/photos';
+---
+
+<section id="your-day" class="your-day theme-olive" aria-labelledby="your-day-heading" data-horizontal>
+  <div class="track" data-track>
+    <div class="intro panel">
+      <SectionHeader
+        sectionId="your-day"
+        label={yourDay.label}
+        heading={yourDay.heading}
+        headingId="your-day-heading"
+        body={yourDay.body}
+      />
+      <p class="timings" data-reveal><Copy text={yourDay.timingsNote} /></p>
+      <div data-reveal>
+        <Cta href={yourDay.cta.href} label={yourDay.cta.label} />
+      </div>
+    </div>
+
+    <ol class="steps" role="list" tabindex="0" aria-label={yourDay.stepsLabel}>
+      {
+        yourDay.steps.map((step, i) => (
+          <li class="step panel" data-step>
+            <Photo
+              photo={photos[step.photo]}
+              ratio="3 / 4"
+              shape={i % 2 === 0 ? 'arch' : 'rect'}
+              reveal
+              sizes="(min-width: 56rem) 26vw, (min-width: 40rem) 50vw, 100vw"
+            />
+            <div class="step-text">
+              <span class="label step-number" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .your-day {
+    position: relative;
+    padding-block: var(--section-pad);
+    overflow: hidden;
+  }
+
+  .track {
+    display: grid;
+    gap: var(--space-8);
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .timings {
+    color: var(--stone);
+  }
+
+  .steps {
+    display: grid;
+    gap: var(--space-7) var(--space-5);
+  }
+
+  .step {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+  }
+
+  .step-text {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .step-number {
+    padding-top: var(--space-3);
+    border-top: var(--rule);
+    color: var(--stone);
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+  }
+
+  /*
+   * Phones and small tablets: the steps in a row you swipe through, the next one peeking in so
+   * it's clear there's more. Focusable, so it can be scrolled with the arrow keys.
+   */
+  @media (max-width: 55.99rem) {
+    .steps {
+      display: flex;
+      gap: var(--space-4);
+      margin-inline: calc(-1 * var(--gutter));
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .steps::-webkit-scrollbar {
+      display: none;
+    }
+
+    .step {
+      flex: 0 0 min(78%, 22rem);
+      scroll-snap-align: start;
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .steps {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .steps {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* ---- Pinned horizontal scroll (desktop, motion allowed; class set by motion.ts) ---- */
+  .your-day:global(.is-horizontal) {
+    display: grid;
+    align-items: center;
+    height: 100svh;
+    padding-block: 0;
+  }
+
+  :global(.is-horizontal) .track {
+    display: flex;
+    align-items: center;
+    gap: var(--space-9);
+    width: max-content;
+    max-width: none;
+    margin: 0;
+    padding-inline: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter))) 12vw;
+  }
+
+  :global(.is-horizontal) .intro {
+    flex: none;
+    width: min(34rem, 40vw);
+  }
+
+  :global(.is-horizontal) .steps {
+    display: flex;
+    align-items: center;
+    gap: var(--space-9);
+  }
+
+  /* Alternate the steps up and down, like stops along a path. */
+  :global(.is-horizontal) .step {
+    flex: none;
+    width: min(26rem, 28vw);
+  }
+
+  :global(.is-horizontal) .step:nth-child(even) {
+    margin-top: 14svh;
+  }
+
+  :global(.is-horizontal) .step:nth-child(odd) {
+    margin-bottom: 14svh;
+  }
+
+  :global(.is-horizontal) .step :global(.photo) {
+    max-height: 52svh;
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+/**
+ * The marker, label, headline and short paragraph that open a section.
+ * The headline carries data-split, so motion.ts reveals it word by word as it scrolls in.
+ */
+import { sectionNumber } from '../data/content';
+
+interface Props {
+  /** Section id, for the 01, 02, 03 marker. */
+  sectionId: string;
+  label: string;
+  heading: string;
+  /** Id for the section's aria-labelledby. */
+  headingId: string;
+  body?: string;
+  align?: 'start' | 'center';
+  class?: string;
+}
+
+const { sectionId, label, heading, headingId, body, align = 'start', class: className } = Astro.props;
+---
+
+<header class:list={['section-header', `align-${align}`, className]}>
+  <p class="label eyebrow" data-reveal>
+    <span class="eyebrow-number">{sectionNumber(sectionId)}</span>
+    <span class="eyebrow-rule" aria-hidden="true"></span>
+    <span>{label}</span>
+  </p>
+  <h2 id={headingId} data-split>{heading}</h2>
+  {body && <p class="lede" data-reveal>{body}</p>}
+</header>
+
+<style>
+  .section-header {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .align-center {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  /* A short bronze rule between the number and the label: an accent, never text. */
+  .eyebrow-rule {
+    width: var(--space-7);
+    border-top: var(--rule);
+  }
+
+  h2 {
+    max-width: 16ch;
+  }
+
+  .align-center h2 {
+    margin-inline: auto;
+  }
+</style>

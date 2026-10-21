@@ -1,0 +1,100 @@
+---
+import Cta from './Cta.astro';
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { exclusiveUse } from '../data/content';
+import { photos } from '../data/photos';
+---
+
+<section id="exclusive-use" class="section theme-olive" aria-labelledby="exclusive-use-heading" data-stack>
+  <div class="container layout">
+    <div class="text">
+      <SectionHeader
+        sectionId="exclusive-use"
+        label={exclusiveUse.label}
+        heading={exclusiveUse.heading}
+        headingId="exclusive-use-heading"
+        body={exclusiveUse.body}
+      />
+      <div data-reveal>
+        <Cta href={exclusiveUse.cta.href} label={exclusiveUse.cta.label} />
+      </div>
+    </div>
+
+    <Photo
+      class="photo"
+      photo={photos.departureCar}
+      ratio="2 / 3"
+      shape="arch"
+      reveal
+      parallax={1}
+      sizes="(min-width: 56rem) 30vw, 100vw"
+    />
+
+    <ol class="points" role="list" data-reveal-group>
+      {
+        exclusiveUse.points.map((point, i) => (
+          <li>
+            <span class="label number" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3>{point.title}</h3>
+            <p>{point.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-7);
+    align-content: center;
+  }
+
+  .points {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .points li {
+    display: grid;
+    gap: var(--space-2);
+    padding-top: var(--space-4);
+    border-top: 1px solid color-mix(in srgb, var(--linen) 25%, transparent);
+  }
+
+  .number {
+    color: var(--stone);
+  }
+
+  h3 {
+    font-size: var(--text-base);
+  }
+
+  @media (min-width: 40rem) {
+    .points {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-5);
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .layout {
+      grid-template-columns: 7fr 5fr;
+      column-gap: var(--space-10);
+      row-gap: var(--space-10);
+    }
+
+    .points {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

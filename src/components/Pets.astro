@@ -1,0 +1,41 @@
+---
+/** Pets welcome: a short typographic pause between sections. No photo, because none of the delivered photos shows a pet. */
+import Copy from './Copy.astro';
+import SectionHeader from './SectionHeader.astro';
+import { pets } from '../data/content';
+---
+
+<section id="pets" class="section theme-chalk" aria-labelledby="pets-heading" data-stack>
+  <div class="container inner">
+    <SectionHeader
+      class="pets-header"
+      sectionId="pets"
+      label={pets.label}
+      heading={pets.heading}
+      headingId="pets-heading"
+      body={pets.body}
+      align="center"
+    />
+    <p class="note" data-reveal><Copy text={pets.note} /></p>
+  </div>
+</section>
+
+<style>
+  .inner {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-5);
+    text-align: center;
+  }
+
+  /* Antique Bronze on Soft Chalk is 3.6:1: fine for display text this large, never for body copy. */
+  .inner :global(.pets-header h2) {
+    max-width: none;
+    font-size: clamp(3rem, 1rem + 9vw, 10rem);
+    color: var(--bronze);
+  }
+
+  .note {
+    font-size: var(--text-sm);
+  }
+</style>

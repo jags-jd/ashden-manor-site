@@ -1,0 +1,149 @@
+---
+/** Not a hotel wedding: a calm side-by-side, rows revealed one at a time. */
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { notAHotel } from '../data/content';
+import { photos } from '../data/photos';
+---
+
+<section id="not-a-hotel" class="section theme-ink" aria-labelledby="not-a-hotel-heading" data-stack>
+  <div class="container layout">
+    <div class="text">
+      <SectionHeader
+        sectionId="not-a-hotel"
+        label={notAHotel.label}
+        heading={notAHotel.heading}
+        headingId="not-a-hotel-heading"
+        body={notAHotel.body}
+      />
+
+      <table>
+        <caption class="visually-hidden">{notAHotel.heading}</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">{notAHotel.columns.topic}</span></th>
+            <th scope="col" class="label">{notAHotel.columns.us}</th>
+            <th scope="col" class="label">{notAHotel.columns.them}</th>
+          </tr>
+        </thead>
+        <tbody data-reveal-group>
+          {
+            notAHotel.rows.map((row) => (
+              <tr>
+                <th scope="row" class="label">{row.topic}</th>
+                <td class="us">{row.us}</td>
+                <td class="them" data-label={notAHotel.columns.themShort}>{row.them}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+
+      <p class="closing" data-reveal>{notAHotel.closing}</p>
+    </div>
+
+    <Photo
+      photo={photos.goldenHourRun}
+      ratio="2 / 3"
+      shape="arch"
+      reveal
+      parallax={1}
+      sizes="(min-width: 64rem) 28vw, 100vw"
+    />
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: var(--space-4) var(--space-4) var(--space-4) 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid color-mix(in srgb, var(--linen) 18%, transparent);
+  }
+
+  thead th {
+    font-weight: var(--weight-regular);
+    color: var(--linen);
+    border-bottom: var(--rule);
+  }
+
+  tbody th {
+    font-weight: var(--weight-regular);
+    color: var(--stone);
+  }
+
+  .us {
+    font-size: var(--text-lg);
+    color: var(--chalk);
+  }
+
+  /* Stone on Ink is 8.3:1: quieter than the Ashden column, still well above AA. */
+  .them {
+    color: var(--stone);
+  }
+
+  .closing {
+    font-size: var(--text-xl);
+    font-style: italic;
+  }
+
+  /* Phones: each row becomes a small card, so three columns don't squeeze the text. */
+  @media (max-width: 39.99rem) {
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    tr {
+      display: grid;
+      gap: var(--space-2);
+      padding-block: var(--space-5);
+      border-bottom: 1px solid color-mix(in srgb, var(--linen) 18%, transparent);
+    }
+
+    th,
+    td {
+      display: block;
+      padding: 0;
+      border: 0;
+    }
+
+    /* Only the hotel line needs a label; the Ashden answer reads on its own under the topic. */
+    td[data-label]::before {
+      content: attr(data-label) ': ';
+      display: inline;
+      font-family: var(--font-display);
+      font-size: var(--text-xs);
+      letter-spacing: var(--tracking-label);
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .layout {
+      grid-template-columns: 7fr 4fr;
+      column-gap: var(--space-10);
+      align-items: center;
+    }
+  }
+</style>

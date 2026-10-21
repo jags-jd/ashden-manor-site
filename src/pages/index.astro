@@ -1,51 +1,47 @@
 ---
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
-import SectionStub from '../components/SectionStub.astro';
-import { sections, site } from '../data/content';
+import Preloader from '../components/Preloader.astro';
+import SectionProgress from '../components/SectionProgress.astro';
+import Hero from '../components/Hero.astro';
+import ExclusiveUse from '../components/ExclusiveUse.astro';
+import Spaces from '../components/Spaces.astro';
+import Food from '../components/Food.astro';
+import Why100 from '../components/Why100.astro';
+import YourDay from '../components/YourDay.astro';
+import Pets from '../components/Pets.astro';
+import NotAHotel from '../components/NotAHotel.astro';
+import Estimate from '../components/Estimate.astro';
+import Enquire from '../components/Enquire.astro';
+import Faq from '../components/Faq.astro';
+import Footer from '../components/Footer.astro';
 
-type Theme = 'chalk' | 'linen' | 'olive' | 'ink';
-
-// Light and dark sections alternate. The hero and footer carry the logo, so they stay light (see CLAUDE.md, Logo).
-const themes: Record<string, Theme> = {
-  top: 'linen',
-  'exclusive-use': 'chalk',
-  spaces: 'olive',
-  food: 'chalk',
-  'why-100': 'linen',
-  'your-day': 'olive',
-  pets: 'chalk',
-  'not-a-hotel': 'linen',
-  estimate: 'ink',
-  enquire: 'chalk',
-  faq: 'linen',
-};
+// Section order and ids come from `sections` in src/data/content.ts (the menu and 01, 02, 03 markers use it).
+// Dark and light sections alternate, so each one reads clearly as it slides over the last.
 ---
 
 <Base>
+  <Preloader />
   <Header />
   <main id="main">
-    {
-      sections.map((section, i) => (
-        <SectionStub
-          section={section}
-          number={i + 1}
-          theme={themes[section.id] ?? 'chalk'}
-          isHero={section.id === 'top'}
-        />
-      ))
-    }
+    <Hero />
+    <ExclusiveUse />
+    <Spaces />
+    <Food />
+    <Why100 />
+    <YourDay />
+    <Pets />
+    <NotAHotel />
+    <Estimate />
+    <Enquire />
+    <Faq />
   </main>
-  <footer class="theme-linen">
-    <div class="container footer-inner">
-      <p class="label">Section {sections.length + 1}</p>
-      <p>{site.name}</p>
-    </div>
-  </footer>
+  <Footer />
+  <SectionProgress />
 </Base>
 
-<style>
-  .footer-inner {
-    padding-block: var(--space-8);
-  }
-</style>
+<script>
+  import { initMotion } from '../lib/motion';
+
+  initMotion();
+</script>

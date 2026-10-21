@@ -1,0 +1,121 @@
+---
+/** Footer: a last, quiet invitation to enquire, then the crest, contact details and small print. */
+import { Image } from 'astro:assets';
+import Cta from './Cta.astro';
+import RollText from './RollText.astro';
+import crest from '../assets/brand/logo-linen.png';
+import { footer, hero, site } from '../data/content';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer theme-ink">
+  <div class="container invite">
+    <h2 data-split>{footer.heading}</h2>
+    <p class="lede" data-reveal>{footer.body}</p>
+    <div data-reveal>
+      <Cta href={footer.cta.href} label={footer.cta.label} variant="primary" />
+    </div>
+  </div>
+
+  <div class="container details">
+    <Image class="crest" src={crest} alt={hero.logoAlt} width={180} />
+    <dl class="contact">
+      <div>
+        <dt class="label">{footer.phoneLabel}</dt>
+        <dd>{footer.phone}</dd>
+      </div>
+      <div>
+        <dt class="label">{footer.emailLabel}</dt>
+        <dd>{footer.email}</dd>
+      </div>
+      <div>
+        <dt class="label">{footer.addressLabel}</dt>
+        <dd>{footer.address}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="container base">
+    <p>&copy; {year} {site.name}. {footer.smallPrint}</p>
+    <a href="#top"><RollText text={footer.backToTop} /></a>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    z-index: 1;
+    padding-top: var(--section-pad);
+  }
+
+  .invite {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-5);
+    padding-bottom: var(--section-pad);
+    text-align: center;
+  }
+
+  .invite h2 {
+    max-width: 18ch;
+  }
+
+  .details {
+    display: grid;
+    gap: var(--space-7);
+    padding-block: var(--space-8);
+    border-top: 1px solid color-mix(in srgb, var(--linen) 18%, transparent);
+  }
+
+  .details :global(.crest) {
+    width: 8rem;
+    height: auto;
+  }
+
+  .contact {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  dt {
+    margin-bottom: var(--space-1);
+    color: var(--stone);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .base {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-6);
+    padding-block: var(--space-5) var(--space-6);
+    border-top: 1px solid color-mix(in srgb, var(--linen) 18%, transparent);
+    font-size: var(--text-xs);
+  }
+
+  .base p {
+    max-width: none;
+  }
+
+  .base a {
+    text-decoration: none;
+  }
+
+  @media (min-width: 48rem) {
+    .details {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      column-gap: var(--space-9);
+    }
+
+    .contact {
+      grid-template-columns: repeat(3, auto);
+      justify-content: end;
+      column-gap: var(--space-8);
+    }
+  }
+</style>

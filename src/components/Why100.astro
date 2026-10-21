@@ -1,0 +1,107 @@
+---
+/** Why 100: the guest count as a large display figure that counts up, one headline, three short points. */
+import Photo from './Photo.astro';
+import SectionHeader from './SectionHeader.astro';
+import { why100 } from '../data/content';
+import { photos } from '../data/photos';
+---
+
+<section id="why-100" class="section theme-linen" aria-labelledby="why-100-heading" data-stack>
+  <div class="container layout">
+    <div class="text">
+      <p class="figure display" aria-hidden="true">
+        <span data-count={why100.count}>{why100.count}</span>
+        <span class="figure-label label">{why100.countLabel}</span>
+      </p>
+      <SectionHeader
+        sectionId="why-100"
+        label={why100.label}
+        heading={why100.heading}
+        headingId="why-100-heading"
+        body={why100.body}
+      />
+      <ol class="points" role="list" data-reveal-group>
+        {
+          why100.points.map((point, i) => (
+            <li>
+              <span class="label number" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <h3>{point.title}</h3>
+                <p>{point.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <Photo
+      photo={photos.champagneTower}
+      ratio="3 / 4"
+      shape="arch"
+      reveal
+      parallax={1}
+      sizes="(min-width: 56rem) 34vw, 100vw"
+    />
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .figure {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+    font-size: var(--text-display);
+    line-height: 0.85;
+    letter-spacing: 0;
+  }
+
+  .figure-label {
+    padding-bottom: 0.6em;
+    font-size: var(--text-xs);
+    line-height: 1;
+  }
+
+  .points {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .points li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--stone);
+  }
+
+  .number {
+    padding-top: 0.2em;
+    color: var(--deep-olive);
+  }
+
+  h3 {
+    margin-bottom: var(--space-1);
+    font-size: var(--text-base);
+  }
+
+  @media (min-width: 56rem) {
+    .layout {
+      grid-template-columns: 6fr 5fr;
+      column-gap: var(--space-10);
+      align-items: center;
+    }
+  }
+</style>

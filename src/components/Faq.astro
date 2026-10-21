@@ -1,0 +1,113 @@
+---
+import Copy from './Copy.astro';
+import SectionHeader from './SectionHeader.astro';
+import { faq } from '../data/content';
+---
+
+<section id="faq" class="section theme-linen" aria-labelledby="faq-heading">
+  <div class="container layout">
+    <SectionHeader class="faq-header" sectionId="faq" label={faq.label} heading={faq.heading} headingId="faq-heading" />
+    <div class="items" data-reveal-group>
+      {
+        faq.items.map((item, i) => (
+          <details>
+            <summary>
+              <span class="label number" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3>{item.question}</h3>
+            </summary>
+            <p>
+              <Copy text={item.answer} />
+            </p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  details {
+    border-bottom: 1px solid var(--stone);
+  }
+
+  details:first-child {
+    border-top: 1px solid var(--stone);
+  }
+
+  /* Open and close smoothly where the browser supports it (interpolate-size in global.css). */
+  details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 0.5s var(--ease-out),
+      content-visibility 0.5s allow-discrete;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+  }
+
+  summary {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding-block: var(--space-5);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .number {
+    color: var(--deep-olive);
+  }
+
+  /* Plus that turns into a minus; decorative, the native disclosure state is announced. */
+  summary::after {
+    content: '+';
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    line-height: 1;
+    color: var(--deep-olive);
+    transition: transform var(--duration) var(--ease-out);
+  }
+
+  details[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  h3 {
+    font-family: var(--font-body);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  details p {
+    padding: 0 0 var(--space-6) calc(3rem + var(--space-3));
+  }
+
+  @media (min-width: 56rem) {
+    .layout {
+      grid-template-columns: 4fr 7fr;
+      column-gap: var(--space-9);
+      align-items: start;
+    }
+
+    .layout :global(.faq-header) {
+      position: sticky;
+      top: var(--space-9);
+    }
+  }
+</style>

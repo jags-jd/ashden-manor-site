@@ -1,0 +1,83 @@
+---
+/**
+ * A venue photo from src/data/photos.ts, cropped to a fixed aspect ratio.
+ * Lazy by default; only the hero passes `eager`.
+ * `reveal` and `parallax` are picked up by src/lib/motion.ts and do nothing without motion.
+ */
+import { Image } from 'astro:assets';
+import type { VenuePhoto } from '../data/photos';
+
+interface Props {
+  photo: VenuePhoto;
+  /** CSS aspect-ratio for the crop, e.g. '4 / 5'. */
+  ratio?: string;
+  /** Rendered width hint for the browser, e.g. '(min-width: 64rem) 33vw, 100vw'. */
+  sizes: string;
+  shape?: 'rect' | 'arch';
+  /** Unmask the photo as it scrolls into view. */
+  reveal?: boolean;
+  /** Drift the photo inside its frame while scrolling; higher is stronger (try 0.5–1.5). */
+  parallax?: number;
+  eager?: boolean;
+  class?: string;
+}
+
+const {
+  photo,
+  ratio = '4 / 5',
+  sizes,
+  shape = 'rect',
+  reveal = false,
+  parallax,
+  eager = false,
+  class: className,
+} = Astro.props;
+
+// Never ask for wider than the original: the delivered files are 675–1080px wide.
+const widths = [360, 540, 720, 1080].filter((w) => w < photo.src.width).concat(photo.src.width);
+---
+
+<div
+  class:list={['photo', { arch: shape === 'arch', 'has-parallax': parallax }, className]}
+  style={`--ratio: ${ratio}; --focus: ${photo.focus ?? 'center'}`}
+  data-reveal-image={reveal ? '' : undefined}
+  data-parallax={parallax}
+>
+  <Image
+    src={photo.src}
+    alt={photo.alt}
+    widths={widths}
+    sizes={sizes}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : 'auto'}
+    decoding={eager ? 'sync' : 'async'}
+  />
+</div>
+
+<style>
+  .photo {
+    position: relative;
+    aspect-ratio: var(--ratio);
+    overflow: hidden;
+    background-color: var(--stone);
+    border-radius: var(--radius);
+  }
+
+  .photo.arch {
+    border-radius: var(--arch);
+  }
+
+  .photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--focus);
+  }
+
+  /* Room for the image to drift: it's taller than its frame and centred. */
+  .has-parallax :global(img) {
+    position: absolute;
+    inset: -10% 0;
+    height: 120%;
+  }
+</style>

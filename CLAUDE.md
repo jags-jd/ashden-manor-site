@@ -37,6 +37,8 @@ This is **phase 1 of the real site**, not a prototype. Build it to production qu
 - Positioned as a premium alternative to a hotel wedding
 - Established 2026 (per logo)
 
+**Exception (Jan, 2026-10-22):** the footer and menu use made-up placeholder contact details (phone 01632 960 482 from Ofcom's range reserved for fiction, hello@ashdenmanor.co.uk, "Ashden Lane, Ashden, England"). They're not linked, and they must be replaced before launch (Open Question 2).
+
 **Anything not listed here is unknown.** No village or county name, distance from cities, chef names, menu dishes, awards, room counts, accommodation, parking, or testimonials. Where copy needs such a detail, use a visible placeholder like `[TBC: location]` and log it under Open Questions.
 
 ---
@@ -66,6 +68,7 @@ Each worry should be addressed somewhere on the page, ideally both in the main n
 | Hosting | Vercel | Client's chosen host; static output |
 | Styling | Astro scoped styles + global CSS custom properties for brand tokens | No framework needed for one page; tokens keep the brand consistent |
 | Interactivity | Vanilla TypeScript in Astro `<script>` tags | Estimator and form don't justify React/Vue |
+| Motion | GSAP 3 (ScrollTrigger, SplitText), all in `src/lib/motion.ts` | Jan's call, 2026-10-22: a richer, image-led feel inspired by belgradearbor.rs. GSAP is free for commercial use |
 | Fonts | Self-hosted via `@fontsource` (Cinzel, Cormorant Garamond) | Performance, no third-party requests |
 | Images | `astro:assets` (`<Image />` / `<Picture />`) | Automatic resizing, modern formats, lazy loading |
 
@@ -104,7 +107,7 @@ Don't add a UI framework, CMS, CSS framework or backend in phase 1. If something
 ### Logo
 
 - `src/assets/brand/logo.png`: crest with AM monogram, wordmark and "EST. 2026". `brandkit.png` is the client's brand sheet.
-- The current file is a PNG on a **pure white** background (780×654). It won't sit cleanly on dark sections until we get a transparent or SVG version (see Open Questions). Until then, place it on Warm Linen or Soft Chalk only.
+- The current file is a PNG on a **pure white** background (780×654). Never place it as-is. Use the transparent versions generated from it: `logo-ink.png` on light sections, `logo-linen.png` on dark ones, `monogram-bronze.png` in the header (see Known gotchas). An SVG is still wanted (Open Questions).
 
 ---
 
@@ -123,7 +126,9 @@ Don't add a UI framework, CMS, CSS framework or backend in phase 1. If something
 11. **FAQ:** the four worries plus practical questions, using `<details>`/`<summary>`
 12. **Footer:** logo, contact placeholders, `[TBC]` address, small print
 
-A sticky, minimal header with anchor links and an "Enquire" button. Smooth scroll that respects `prefers-reduced-motion`.
+A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" button that jumps to the estimator, Jan's call 2026-10-22; labels in Cinzel small caps; the monogram is hidden below 24rem) that stays in place. Past half the first screen it compacts into a round Menu button (top left) and a "See prices" text pill (top right) so it rarely covers text (Jan's choice, 2026-10-22). It turns see-through while scrolling and eases back to solid shortly after scrolling stops. Menu opens a full-screen `<dialog>` listing every section with its 01–10 marker. Smooth scroll that respects `prefers-reduced-motion`.
+
+**Design principles (redesign, 2026-10-22, inspired by belgradearbor.rs):** restrained and image-led. Each section is mostly one large photo, one headline and a short paragraph, with lots of breathing room. Numbered markers (01, 02…) guide the eye. Information is broken into digestible pieces (tabs for the spaces, a horizontal timeline for the day). There's always a next step (See prices in the header, Enquire in the menu, a CTA in most sections, a closing invitation in the footer), but nothing pushes. Motion is deliberate, not everywhere.
 
 ---
 
@@ -219,8 +224,8 @@ Claude writes all page copy from the brief above.
 - **Don't use pure white or pure black.**
 - **Don't invent venue facts, prices, testimonials or awards.**
 - **Don't hard-code prices** outside `pricing.ts`.
-- **Don't add dependencies** beyond Astro, fontsource and test tooling without asking.
-- **Don't over-animate.** Subtle fades at most, all disabled under `prefers-reduced-motion`.
+- **Don't add dependencies** beyond Astro, fontsource, GSAP and test tooling without asking.
+- **Motion is deliberate, not everywhere.** Use the data attributes in `src/lib/motion.ts` rather than one-off animations. Everything must be off under `prefers-reduced-motion`, and the page must be complete without JavaScript. Don't add scroll-jacking or smooth-scroll libraries without asking.
 
 ---
 
@@ -293,6 +298,32 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - **Header width.** Five nav links plus Enquire need ~1100px, so inline links start at 72rem and the Menu button covers everything below. The header was tightened to fit at 320px. Re-check both if you add a nav item.
 - **`astro.config.mjs` has no `// @ts-check`.** It reads `process.env` and `@types/node` isn't installed (adding it would need sign-off).
 - **Headless Edge screenshots** lay out wider than `--window-size` at phone widths. Load the page in a 375px/320px `<iframe>` instead.
+- **On-page crest.** Use `src/assets/brand/logo-ink.png` on light sections and `logo-linen.png` on dark ones, plus `monogram-bronze.png` for the header and preloader. All three are transparent and generated by `scripts/brand-icons.mjs`. Never use `logo.png`, which has a white box.
+- **`[TBC]` in copy** renders through `Copy.astro`, which italicises the placeholder. Use it for any copy string that might contain one.
+- **No `node:` imports in tests.** `astro check` type-checks `tests/` and `@types/node` isn't installed; read files with Vite's `?raw` import instead.
+- **Full-page screenshots** must use a real viewport height (e.g. 1440×900 plus `captureBeyondViewport`). A very tall window makes the `100svh` hero that tall.
+- **Header stays put** (Jan, 2026-10-22: no hide on scroll) and compacts to corner buttons once scrolled (`is-compact` in `Header.astro`). It floats over the top padding of each section, so `scroll-padding-top` is 0. Labels in compact mode are visually hidden, not removed, so the buttons keep their accessible names.
+- **Motion (`src/lib/motion.ts`).** It runs inside `gsap.matchMedia`: nothing happens under reduced motion, and pins and horizontal scroll run only from 56rem up. Pins are created first, in page order. GSAP wraps each pinned section in a `.pin-spacer`, so `main > section` stops matching it once pinned; collect section lists before pinning.
+- **Pacing (desktop).** Each stacked section holds at its top (`HOLD_AT_TOP`, 30% of the screen's height in scroll), scrolls its own content if it's taller than the screen, holds at its end (`HOLD_AT_END`, 45%), then the next slides over. Your day scrolls sideways at `PACE` = 1.8 times its width. All three constants are in `motion.ts`. The holds are a margin on the next section, which GSAP moves onto its pin spacer. Never put a second ScrollTrigger on a pinned element: its start is pushed back by the pin's length. Drive it from the pin's `onUpdate` instead.
+- **Sections on desktop are at least 100svh**, with content centred (global.css), so each gets the screen to itself.
+- **Don't offset GSAP-animated elements with `transform` or `translate`.** GSAP resets both (it writes `translate: none`), which is what pushed the hero photo off screen. Use layout (grid, margins) instead.
+- **Phones (below 56rem)** differ on purpose:
+  - headlines reveal once rather than being tied to the scroll, so they're never left half-blurred;
+  - sections have less padding (`--section-pad` floor 4.5rem);
+  - Your day is a swipeable row (focusable, `aria-label`);
+  - the hotel comparison shows only an "At a hotel:" label;
+  - the hero hides its second button and the crest;
+  - the Spaces tabs are a row of pills directly above a square photo, and choosing one keeps the panel in view.
+  
+  Check 320px for overflow after any copy change. Long single-line buttons are the usual cause.
+- **No `once: true` in ScrollTriggers.** After a reload part-way down the page, `once` triggers fire and kill themselves during setup, which crashes ScrollTrigger's refresh ("reading 'end'" of undefined) and leaves motion half-initialised. Use `toggleActions: PLAY_ONCE` (in `motion.ts`) instead. Test changes with a reload at the bottom of the page.
+- **Header on scroll**: it compacts while scrolling down past the first half-screen and returns to the full pill on any scroll up (or near the top). It also works after a reload part-way down.
+- **Spaces tabs on desktop**: the two columns are bottom-aligned and the photo's height is capped (`100svh - --section-pad - 10rem`), so whenever the tabs are on screen the whole photo is too. That matters because the section is pinned and its content scrolls, so `scrollIntoView` can't help. Re-test at 1280×720 if the layout changes.
+- **Footer is deliberately simple** (Jan): invitation and CTA, crest, contact, small print. No menu, photo strip or wordmark. Your day has no progress line.
+- **Hidden-until-animated content.** With motion on, the hero copy and photo start hidden (`html.motion`) and the preloader shows on the first visit of a session (`html.intro`). Both have CSS failsafes (3.5s and 4s) in case the script fails. Everything else is hidden by GSAP itself, so it stays visible without JavaScript.
+- **Bronze text.** Antique Bronze passes only as large display text, on Ink (4.1:1) or Chalk (3.6:1). That covers the Food and Pets headlines, and never labels or table headers. It fails on Linen and Olive, even when large.
+- **Rolling text.** `.roll-track` must keep its natural height (`flex: none`) or the hover slide lands halfway. Labels inside it must not wrap (`white-space: nowrap` is set).
+- **Screenshots in dev** show Astro's dev toolbar as a small pill at the bottom centre. It isn't in the build.
 - **Placeholder prices are public-facing risk.** Never ship to the live domain with `IS_PLACEHOLDER = true` without Jan confirming that's acceptable.
 
 ---
@@ -314,19 +345,25 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 
 ## Current build state
 
-**Status:** Scaffolded (2026-10-22). Astro 7 static site, strict TypeScript, Vitest, self-hosted fonts, brand tokens, base layout with meta/OG/favicons, sticky header (Menu toggle below 72rem), 11 labelled section stubs plus footer, 404 page. Build, check and tests pass.
-
-**Next session goal:** Session 3. Map all 20 photos into `src/data/photos.ts` and propose a hero, then write copy in `content.ts` (hero, exclusive use and "why 100" first, for Jan's review), then build the section components with real photos.
+**Status:** Redesigned (2026-10-22): image-led layout with GSAP motion. It has a floating header with a full-screen menu, a preloader, stacked section transitions, word-by-word headline reveals, photo unmasking and parallax, tabbed Spaces, a horizontal Your day and a parallax footer. Copy is trimmed to one headline and a short paragraph per section. Checked in headless Edge at 1440×900, 390×844, 375×667 and 320×640, plus with reduced motion. Build, check and tests pass. A pre-redesign copy of `src/` was kept outside the repo, in the session scratchpad.
 
 **In flight:** Vercel project not yet connected (Jan to do: import the GitHub repo, framework preset Astro, no env vars).
 
 **Blocked on:** Nothing for phase 1.
 
+**Session 3 done (2026-10-22):** all 20 photos mapped in `src/data/photos.ts` (section placement, alt text; 3, 4, 10, 11 and 16 currently unused). All copy is in `content.ts`. Every section is a real component (`src/components/*.astro`) with real photos; the estimate and enquiry sections hold their heading and intro only, ready for sessions 4 and 5. `pricing.ts` has `GUEST_COUNT` only so far. Tests now also guard the copy (banned clichés, no typed guest count). Checked at 1440px and 375px.
+
+**Next session goal:** Jan to review the redesign in the browser. Then Session 4, the price estimator (styled to the new principles, perhaps as stages like the reference's instalment plan).
+
+**Hero photo:** photo 20 (`photos.manorFromAbove`), aerial view of the house and lawns. Jan to confirm. On desktop it's a two-column grid: copy beside the photo in an arch, over a blurred copy of the photo, with type and photo scaled by screen height so it fits from 1280×720 up. Phones show it full-bleed under a dark gradient.
+
 **Working decisions (reversible; Jan to confirm):**
-- Hero: the logo sits on a Warm Linen panel/band, not directly on the photo (PNG has a light background).
+- Hero: dark, with the transparent Linen crest (desktop only; the header monogram covers phones).
 - Enquiry error state will be triggered by the URL flag `?enquiry=error`.
 - Section themes alternate light/dark (see `src/pages/index.astro`); hero and footer stay light because they carry the logo.
-- Header nav shows The manor, The spaces, The food, Prices, Questions + Enquire. "Your day" was dropped from the nav to fit.
+- Menu lists all ten sections with their markers. A slim vertical counter at the left edge (desktop) shows the current section number, kept in the page margin so it never sits over content.
+- Pets has no photo, because none of the 20 shows a pet. It's a typographic interlude.
+- No newsletter sign-up, although the reference site has one. It would collect personal data, so it needs a backend and consent (Open Questions).
 - Until a domain exists, canonical/OG URLs use Vercel's production URL (`VERCEL_PROJECT_PRODUCTION_URL`).
 
 ---
@@ -348,13 +385,15 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 ## Open questions
 
 1. **Real pricing**: rates, seasons, minimum spend, what catering includes
-2. **Location and contact**: address, county, phone, email, directions
-3. **Photos**: delivered 2026-10-22. Are they cleared for web use, and who should be credited, if anyone?
+2. **Location and contact**: address, county, phone, email, directions. The footer currently shows made-up placeholders (see Venue facts). **Replace them before launch.**
+3. **Photos**: delivered 2026-10-22 and used as provided (Jan's call). Raised once on 2026-10-22: several look sourced from other venues and social media (e.g. a burned-in "tobelovedevents.com" credit on 1, social-media UI on 10), so web-use clearance and credits still need the client's confirmation. Full-resolution originals would also help: all files are 675–1080px wide and portrait.
 4. **Logo**: can the client supply an SVG or transparent PNG?
 5. **Form destination**: where should enquiries go in the next phase?
 6. **Guest numbers**: fixed at 100. Does that include evening-only guests, and is the price the same if a couple brings fewer?
 7. **Domain**: what domain will the site live on?
 8. **Placeholder prices on launch**: is the client happy to go live with illustrative figures, or should the estimator be hidden until real prices arrive? Note: every push to `main` deploys to production, so the `vercel.app` URL is effectively live from the first deploy.
+9. **Copy placeholders** (each shows on the page as an italic `[TBC: ...]`): sample menus and what catering includes; earliest ceremony time and evening finish; house rules for pets; whether evening-only guests count towards the 100; whether the price changes for a smaller wedding; dietary requirements; email, phone and address (footer); village and county (hero).
+10. **Newsletter**: the reference site has a sign-up form. Does the client want one? It would need a backend, consent wording and a privacy policy, so it's not for phase 1.
 
 ---
 

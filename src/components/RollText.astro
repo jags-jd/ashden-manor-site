@@ -1,0 +1,13 @@
+---
+/**
+ * Rolling-text hover: the label plus an aria-hidden copy, stacked. The parent link or button
+ * slides them up on hover and keyboard focus (styles in global.css). Screen readers hear it once.
+ */
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+---
+
+<span class="roll"><span class="roll-track"><span>{text}</span><span aria-hidden="true">{text}</span></span></span>

@@ -1,0 +1,65 @@
+---
+/**
+ * The current section's number (01, 02, ...) over a thin vertical progress line, fixed at the
+ * left edge on desktop: slim enough to sit in the page margin, clear of the text. Decoration only (the menu and headings carry the same information); driven by motion.ts.
+ */
+---
+
+<div class="section-progress" aria-hidden="true" data-section-progress>
+  <span class="label number" data-section-progress-number>01</span>
+  <span class="line"><span class="fill" data-section-progress-fill></span></span>
+</div>
+
+<style>
+  .section-progress {
+    display: none;
+  }
+
+  @media (min-width: 56rem) {
+    .section-progress {
+      position: fixed;
+      left: var(--space-4);
+      bottom: var(--space-6);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-2);
+      border-radius: var(--radius-pill);
+      background: color-mix(in srgb, var(--ink) 88%, transparent);
+      color: var(--linen);
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity var(--duration) var(--ease),
+        visibility var(--duration);
+    }
+
+    .section-progress:global(.is-visible) {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .line {
+    width: 1px;
+    height: 4rem;
+    background: color-mix(in srgb, var(--linen) 25%, transparent);
+  }
+
+  .fill {
+    display: block;
+    height: 100%;
+    background: var(--bronze);
+    height: 100%;
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  .number {
+    min-width: 2ch;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

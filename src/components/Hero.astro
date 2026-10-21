@@ -1,0 +1,203 @@
+---
+/**
+ * Hero: one full screen. On phones the manor photo fills it, with the copy on a dark gradient.
+ * From 56rem it's two columns, copy and photo centred side by side: the photo sharp in an arched
+ * frame over a blurred, darkened copy of itself (the delivered photos are too small to run sharp
+ * full-bleed on a desktop screen). Type and photo scale with the screen's height as well as its
+ * width, so short laptop screens still show all of it.
+ * The crest is the transparent Linen version, so it sits on the dark hero cleanly.
+ */
+import { Image, getImage } from 'astro:assets';
+import Cta from './Cta.astro';
+import Copy from './Copy.astro';
+import crest from '../assets/brand/logo-linen.png';
+import { hero } from '../data/content';
+import { heroPhoto } from '../data/photos';
+
+// Small and blurred, so a low-resolution copy is plenty. Loaded only on desktop (it's a CSS background).
+const backdrop = await getImage({ src: heroPhoto.src, width: 480, format: 'webp' });
+const widths = [360, 540, heroPhoto.src.width];
+---
+
+<section id="top" class="hero theme-ink" aria-labelledby="top-heading" style={`--backdrop: url(${backdrop.src})`} data-stack>
+  <div class="backdrop" aria-hidden="true" data-hero-backdrop></div>
+
+  <div class="inner container">
+    <div class="copy">
+      <Image class="crest" src={crest} alt={hero.logoAlt} width={240} loading="eager" data-hero-item />
+      <p class="label location" data-hero-item><Copy text={hero.location} /></p>
+      <h1 id="top-heading" data-hero-heading>{hero.heading}</h1>
+      <p class="lede" data-hero-item>{hero.lede}</p>
+      <div class="ctas" data-hero-item>
+        <Cta href={hero.primaryCta.href} label={hero.primaryCta.label} variant="primary" />
+        <Cta class="secondary-cta" href={hero.secondaryCta.href} label={hero.secondaryCta.label} />
+      </div>
+    </div>
+
+    <div class="frame" data-hero-photo>
+      <Image
+        src={heroPhoto.src}
+        alt={heroPhoto.alt}
+        widths={widths}
+        sizes="(min-width: 56rem) 34vw, 100vw"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    display: grid;
+    align-items: end;
+    min-height: 100svh;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* Phones: the photo is the background, sharp at phone widths. */
+  .frame {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .frame :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* A dark gradient under the copy keeps Linen text above 7:1 over any part of the photo. */
+  .frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ink) 25%, transparent) 0%,
+      color-mix(in srgb, var(--ink) 30%, transparent) 26%,
+      color-mix(in srgb, var(--ink) 90%, transparent) 46%,
+      var(--ink) 72%
+    );
+  }
+
+  .backdrop {
+    display: none;
+  }
+
+  .copy {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    padding-top: calc(var(--header-top) + var(--header-pill) + var(--space-8));
+    padding-bottom: var(--space-9);
+  }
+
+  /* Phones: the header's monogram is enough, and the copy stays low on the dark gradient. */
+  .crest {
+    display: none;
+    height: auto;
+  }
+
+  .location {
+    color: var(--stone);
+  }
+
+  h1 {
+    max-width: 14ch;
+    font-size: var(--text-4xl);
+    line-height: var(--leading-display);
+    letter-spacing: 0.06em;
+  }
+
+  .lede {
+    max-width: 30rem;
+    font-style: italic;
+  }
+
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  /* Phones: smaller headline and one button, so the copy sits low and the photo shows above it. */
+  @media (max-width: 29.99rem) {
+    .copy {
+      padding-bottom: var(--space-8);
+    }
+
+    h1 {
+      font-size: clamp(2rem, 8.6vw, 2.5rem);
+    }
+
+    .ctas :global(.secondary-cta) {
+      display: none;
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .hero {
+      align-items: center;
+      height: 100svh;
+      min-height: 36rem;
+    }
+
+    .backdrop {
+      display: block;
+      position: absolute;
+      inset: -5%;
+      z-index: -1;
+      background: var(--backdrop) center / cover;
+      filter: blur(28px) brightness(0.42) saturate(0.9);
+    }
+
+    /* Copy and photo side by side, both centred on the screen's height. */
+    .inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-9);
+      height: 100%;
+      padding-block: calc(var(--header-top) + var(--header-pill) + 2svh) 4svh;
+    }
+
+    .copy {
+      gap: clamp(var(--space-2), 1.6svh, var(--space-4));
+      padding: 0;
+    }
+
+    .crest {
+      display: block;
+      width: clamp(4.5rem, 12svh, 8.5rem);
+    }
+
+    /* Scales with height as well as width, so the headline never pushes the buttons off screen. */
+    h1 {
+      max-width: 15ch;
+      font-size: clamp(2.25rem, min(1.4rem + 3vw, 7svh), 4.5rem);
+    }
+
+    .lede {
+      font-size: var(--text-lg);
+    }
+
+    .frame {
+      position: relative;
+      inset: auto;
+      z-index: 0;
+      height: min(66svh, 44rem);
+      aspect-ratio: 2 / 3;
+      border-radius: var(--arch);
+    }
+
+    .frame::after {
+      display: none;
+    }
+  }
+</style>

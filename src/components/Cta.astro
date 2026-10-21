@@ -1,0 +1,20 @@
+---
+/** A call to action: pill button with rolling text and an arrow. */
+import RollText from './RollText.astro';
+
+interface Props {
+  href: string;
+  label: string;
+  variant?: 'primary' | 'secondary';
+  class?: string;
+}
+
+const { href, label, variant = 'secondary', class: className } = Astro.props;
+---
+
+<a class:list={['button', `button-${variant}`, className]} href={href}>
+  <RollText text={label} />
+  <svg class="button-arrow" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+    <path d="M0 6h22M17 1l5 5-5 5" stroke="currentColor" stroke-width="1" />
+  </svg>
+</a>

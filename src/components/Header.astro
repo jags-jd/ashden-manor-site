@@ -1,212 +1,534 @@
 ---
-import { header, sections, site } from '../data/content';
+/**
+ * Floating header: a dark pill centred near the top, with Menu, the monogram and See prices.
+ * It stays in place while scrolling (Jan's call), turning see-through while the page moves and
+ * easing back to solid shortly after it stops. While scrolling down past the hero it compacts into
+ * two small buttons in the corners, and it opens back into the full pill whenever you scroll up (a round Menu button, a See prices pill), so it rarely sits over text. Labels stay
+ * in the accessible name; only their text is hidden visually. Menu opens a full-screen
+ * <dialog> (focus trapping and Escape come free) with large rolling-text links.
+ */
+import { Image } from 'astro:assets';
+import Cta from './Cta.astro';
+import RollText from './RollText.astro';
+import monogram from '../assets/brand/monogram-bronze.png';
+import crest from '../assets/brand/logo-linen.png';
+import { footer, header, hero, sectionNumber, sections } from '../data/content';
 
 const navItems = sections.filter((s) => s.inNav);
 ---
 
 <a class="skip-link" href="#main">{header.skipLink}</a>
 
-<header class="site-header theme-chalk">
-  <div class="container bar">
-    <a class="wordmark" href="#top">{site.name}</a>
+<header class="site-header">
+  <div class="pill">
+    <button
+      class="menu-button label"
+      type="button"
+      aria-haspopup="dialog"
+      aria-controls="site-menu"
+      aria-expanded="false"
+    >
+      <span class="menu-lines" aria-hidden="true"></span>
+      <span class="button-text"><RollText text={header.menuOpen} /></span>
+    </button>
 
-    <nav class="nav" aria-label={header.navLabel}>
-      <button
-        class="menu-toggle label"
-        type="button"
-        aria-expanded="false"
-        aria-controls="site-nav-list"
-        data-open-label={header.menuOpen}
-        data-close-label={header.menuClose}
-      >
-        {header.menuOpen}
+    <a class="home" href="#top" aria-label={header.homeLabel}>
+      <Image src={monogram} alt="" width={40} loading="eager" />
+    </a>
+
+    <a class="enquire label" href={header.cta.href}>
+      <span class="button-text"><RollText text={header.cta.label} /></span>
+      <svg class="button-arrow" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+        <path d="M0 6h22M17 1l5 5-5 5" stroke="currentColor" stroke-width="1"></path>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<dialog id="site-menu" class="menu theme-ink" aria-label={header.menuLabel}>
+  <div class="menu-inner container">
+    <div class="menu-top">
+      <button class="menu-close label" type="button">
+        <span class="close-x" aria-hidden="true"></span>
+        <RollText text={header.menuClose} />
       </button>
-      <ul id="site-nav-list" class="nav-list" role="list">
+    </div>
+
+    <nav class="menu-nav" aria-label={header.menuLabel}>
+      <ol class="menu-list" role="list">
         {
           navItems.map((item) => (
-            <li>
-              <a class="nav-link label" href={`#${item.id}`}>
-                {item.label}
+            <li class="menu-item">
+              <a class="menu-link" href={`#${item.id}`}>
+                <span class="menu-number label" aria-hidden="true">
+                  {sectionNumber(item.id)}
+                </span>
+                <RollText text={item.label} />
               </a>
             </li>
           ))
         }
-      </ul>
+      </ol>
     </nav>
 
-    <a class="enquire label" href={header.enquireHref}>{header.enquire}</a>
+    <div class="menu-aside">
+      <Image class="menu-crest" src={crest} alt={hero.logoAlt} width={160} />
+      <p>{header.menuNote}</p>
+      <p class="menu-contact">
+        <span class="label">{footer.phoneLabel}</span>
+        <span>{footer.phone}</span>
+      </p>
+      <Cta href={header.enquireHref} label={footer.cta.label} variant="primary" class="menu-enquire" />
+    </div>
   </div>
-</header>
+</dialog>
 
 <style>
+  /* Spans the screen (minus gutters); the pill inside is centred, and widens to the edges when compact. */
   .site-header {
-    position: sticky;
-    top: 0;
+    position: fixed;
+    top: var(--header-top);
+    left: var(--gutter);
+    right: var(--gutter);
     z-index: 50;
-    border-bottom: 1px solid var(--stone);
+    pointer-events: none;
   }
 
-  .bar {
+  .site-header > .pill {
+    pointer-events: auto;
+  }
+
+  .pill {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    min-height: var(--header-height);
+    justify-content: space-between;
+    max-width: 36rem;
+    margin-inline: auto;
+    min-height: var(--header-pill);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-5);
+    border: 1px solid color-mix(in srgb, var(--linen) 10%, transparent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--ink) 86%, transparent);
+    color: var(--linen);
+    box-shadow: 0 0.5rem 2rem -1rem color-mix(in srgb, var(--ink) 50%, transparent);
+    backdrop-filter: blur(14px);
+    --color-focus: var(--linen);
+    /* Back to solid: wait a moment, then ease in slowly. */
+    transition:
+      background-color 0.9s var(--ease) 0.5s,
+      border-color 0.9s var(--ease) 0.5s,
+      box-shadow 0.9s var(--ease) 0.5s,
+      max-width 0.7s var(--ease-out),
+      padding 0.7s var(--ease-out);
   }
 
-  .wordmark {
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    letter-spacing: var(--tracking-display);
-    text-transform: uppercase;
-    line-height: 1.1;
-    text-decoration: none;
-    margin-right: auto;
-    /* Stacks onto two lines on narrow phones so Menu and Enquire still fit. */
-    width: min-content;
+  /* While scrolling: see-through, quickly. The label text stays full Linen. */
+  .site-header.is-scrolling .pill {
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    border-color: color-mix(in srgb, var(--linen) 6%, transparent);
+    box-shadow: none;
+    transition-duration: 0.35s;
+    transition-delay: 0s;
   }
 
-  /* Smallest phones (320px): tighten spacing so everything fits without dropping below 16px. */
-  @media (max-width: 23.99rem) {
-    .bar {
-      gap: var(--space-2);
-    }
-
-    .wordmark {
-      font-size: var(--text-xs);
-      letter-spacing: 0.08em;
-    }
-
-    .menu-toggle,
-    .enquire {
-      padding-inline: var(--space-2);
-      letter-spacing: 0.08em;
-    }
+  /* ---- Compact: a round Menu button and a See prices pill in the corners, nothing in the middle ---- */
+  .site-header.is-compact .pill {
+    max-width: 100%;
+    padding: 0;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    pointer-events: none;
   }
 
-  @media (min-width: 30rem) {
-    .bar {
-      gap: var(--space-4);
-    }
-
-    .wordmark {
-      width: auto;
-      white-space: nowrap;
-    }
+  .home {
+    transition:
+      opacity 0.4s var(--ease),
+      visibility 0.4s;
   }
 
-  .nav-link,
-  .menu-toggle,
+  .is-compact .home {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .is-compact .menu-button,
+  .is-compact .enquire {
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--linen) 12%, transparent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--ink) 86%, transparent);
+    color: var(--linen);
+    box-shadow: 0 0.5rem 1.5rem -0.75rem color-mix(in srgb, var(--ink) 60%, transparent);
+    backdrop-filter: blur(14px);
+    pointer-events: auto;
+    transition:
+      background-color 0.9s var(--ease) 0.5s,
+      border-color 0.9s var(--ease) 0.5s;
+  }
+
+  .is-compact.is-scrolling .menu-button,
+  .is-compact.is-scrolling .enquire {
+    background: color-mix(in srgb, var(--ink) 40%, transparent);
+    transition-duration: 0.35s;
+    transition-delay: 0s;
+  }
+
+  /* The prices button keeps its label: a small pill rather than a circle. */
+  .is-compact .enquire {
+    width: auto;
+    padding-inline: var(--space-4);
+  }
+
+  .is-compact .enquire:hover {
+    background: var(--linen);
+    color: var(--ink);
+  }
+
+  .is-compact .menu-lines {
+    width: 1.125rem;
+  }
+
+  /* Menu's label leaves the screen but stays in the accessible name. */
+  .is-compact .menu-button .button-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  /*
+   * Labels in Cinzel without forcing capitals: Cinzel has no true lowercase, so lowercase letters
+   * render as small capitals. Same 16px floor, but quieter than full caps.
+   */
+  .menu-button,
+  .menu-close,
   .enquire {
+    text-transform: none;
+    letter-spacing: 0.08em;
+  }
+
+  .menu-button,
+  .menu-close {
     display: inline-flex;
     align-items: center;
+    gap: var(--space-3);
     min-height: 2.75rem; /* 44px touch target */
-  }
-
-  .nav-link {
-    white-space: nowrap;
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-  }
-
-  .nav-link:hover {
-    border-bottom-color: var(--bronze);
-  }
-
-  .menu-toggle {
-    padding-inline: var(--space-3);
+    padding: 0;
+    border: 0;
     background: none;
-    border: 1px solid var(--stone);
-    border-radius: var(--radius);
+    color: inherit;
     cursor: pointer;
   }
 
+  /* Two thin lines that draw together on hover. */
+  .menu-lines {
+    position: relative;
+    width: 1.5rem;
+    height: 0.375rem;
+    border-block: 1px solid var(--bronze);
+    transition: height 0.4s var(--ease-out);
+  }
+
+  .menu-button:hover .menu-lines {
+    height: 0;
+  }
+
+  .home {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: translate(-50%, -50%);
+    border-radius: var(--radius-pill);
+  }
+
+  .home :global(img) {
+    width: 1.5rem;
+    height: auto;
+  }
+
   .enquire {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: calc(var(--header-pill) - 2 * var(--space-1) - 2px);
     padding-inline: var(--space-4);
-    background: var(--deep-olive);
-    color: var(--chalk);
+    border: 1px solid color-mix(in srgb, var(--linen) 30%, transparent);
+    border-radius: var(--radius-pill);
     text-decoration: none;
-    border-radius: var(--radius);
-    transition: background-color var(--duration) var(--ease);
+    transition:
+      border-color var(--duration) var(--ease),
+      background-color var(--duration) var(--ease),
+      color var(--duration) var(--ease);
   }
 
   .enquire:hover {
-    background: var(--ink);
+    border-color: var(--linen);
+    background: var(--linen);
+    color: var(--ink);
   }
 
-  /* Phones: links collapse behind a Menu button and drop down below the bar. */
-  .nav-list {
-    display: none;
-    list-style: none;
-    padding: 0;
+  .enquire:hover .button-arrow {
+    transform: translateX(0.25rem);
   }
 
-  .nav-list.is-open {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    padding: var(--space-2) var(--gutter) var(--space-4);
-    background: var(--chalk);
-    border-bottom: 1px solid var(--stone);
-  }
-
-  /* Without JavaScript there is no toggle, so show the links inline and let them wrap. */
-  :global(html:not(.js)) .menu-toggle {
-    display: none;
-  }
-
-  :global(html:not(.js)) .nav-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 var(--space-4);
-  }
-
-  /* Inline links need roughly 1100px; below that they sit behind the Menu button. */
-  @media (min-width: 72rem) {
-    .menu-toggle {
+  /* Smallest phones (320px): no room for the monogram between the two buttons. */
+  @media (max-width: 23.99rem) {
+    .home {
       display: none;
     }
+  }
 
-    .nav-list,
-    .nav-list.is-open {
-      display: flex;
-      flex-direction: row;
-      gap: var(--space-5);
-      position: static;
-      padding: 0;
-      border: 0;
-      background: none;
+  /* Phones: drop the arrow and tighten, so Menu, the monogram and See prices never touch. */
+  @media (max-width: 29.99rem) {
+    .pill {
+      padding-left: var(--space-4);
     }
+
+    .enquire {
+      padding-inline: var(--space-4);
+    }
+
+    .enquire .button-arrow {
+      display: none;
+    }
+  }
+
+  /* ---- Full-screen menu ---- */
+  .menu {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-y: auto;
+  }
+
+  .menu::backdrop {
+    background: transparent;
+  }
+
+  .menu-inner {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: var(--space-6);
+    min-height: 100%;
+    padding-block: calc(var(--header-top) + var(--space-2)) var(--space-7);
+  }
+
+  .menu-top {
+    display: flex;
+    align-items: center;
+    min-height: var(--header-pill);
+  }
+
+  /* An X made of the menu's two lines. */
+  .close-x {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .close-x::before,
+  .close-x::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    border-top: 1px solid var(--bronze);
+    transform: rotate(45deg);
+  }
+
+  .close-x::after {
+    transform: rotate(-45deg);
+  }
+
+  .menu-nav {
+    align-self: center;
+  }
+
+  .menu-list {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .menu-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    font-family: var(--font-display);
+    /* Scales with height too, so all ten links fit on a laptop screen. */
+    font-size: clamp(1.75rem, min(0.8rem + 2.8vw, 6svh), 3.25rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .menu-number {
+    min-width: 2ch;
+    color: var(--stone);
+  }
+
+  .menu-link :global(.roll) {
+    height: 1.15em;
+    line-height: 1.15;
+  }
+
+  .menu-link:hover {
+    color: var(--chalk);
+  }
+
+  .menu-aside {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    padding-top: var(--space-6);
+    border-top: 1px solid color-mix(in srgb, var(--linen) 20%, transparent);
+  }
+
+  .menu-aside :global(.menu-crest) {
+    width: 8rem;
+    height: auto;
+  }
+
+  .menu-contact {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  @media (min-width: 56rem) {
+    .menu-inner {
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: auto 1fr;
+      column-gap: var(--space-9);
+    }
+
+    .menu-top {
+      grid-column: 1 / -1;
+    }
+
+    .menu-aside {
+      align-self: end;
+      padding-top: 0;
+      padding-left: var(--space-7);
+      border-top: 0;
+      border-left: 1px solid color-mix(in srgb, var(--linen) 20%, transparent);
+    }
+  }
+
+  :global(html.menu-open) {
+    overflow: hidden;
   }
 </style>
 
 <script>
-  const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
-  const list = document.getElementById('site-nav-list');
+  import { gsap } from 'gsap';
 
-  if (toggle && list) {
-    const setOpen = (open: boolean) => {
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.textContent = (open ? toggle.dataset.closeLabel : toggle.dataset.openLabel) ?? '';
-      list.classList.toggle('is-open', open);
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /*
+   * See-through while the page scrolls, solid again shortly after it stops (timing in the CSS).
+   * Compact corner buttons while scrolling down past the first half-screen; the full pill again
+   * as soon as you scroll up, or near the top. Works from any starting point, including a reload
+   * part-way down the page.
+   */
+  const siteHeader = document.querySelector<HTMLElement>('.site-header');
+  if (siteHeader) {
+    // Ignore small jitters (trackpads, mobile toolbars).
+    const THRESHOLD = 8;
+    let settle: number | undefined;
+    let lastY = window.scrollY;
+    const compact = () => {
+      const y = window.scrollY;
+      if (y <= window.innerHeight * 0.5) siteHeader.classList.remove('is-compact');
+      else if (Math.abs(y - lastY) > THRESHOLD) siteHeader.classList.toggle('is-compact', y > lastY);
+      else return;
+      lastY = y;
+    };
+    // Reloaded part-way down: start compact, so the full pill appears on the first scroll up.
+    siteHeader.classList.toggle('is-compact', window.scrollY > window.innerHeight * 0.5);
+    window.addEventListener(
+      'scroll',
+      () => {
+        compact();
+        siteHeader.classList.add('is-scrolling');
+        window.clearTimeout(settle);
+        settle = window.setTimeout(() => siteHeader.classList.remove('is-scrolling'), 250);
+      },
+      { passive: true },
+    );
+  }
+
+  const menu = document.querySelector<HTMLDialogElement>('#site-menu');
+  const openButton = document.querySelector<HTMLButtonElement>('.menu-button');
+  const closeButton = menu?.querySelector<HTMLButtonElement>('.menu-close');
+
+  /* ---- Menu ---- */
+  if (menu && openButton && closeButton) {
+    const items = menu.querySelectorAll('.menu-item, .menu-aside > *');
+
+    const open = () => {
+      menu.showModal();
+      document.documentElement.classList.add('menu-open');
+      openButton.setAttribute('aria-expanded', 'true');
+      if (reducedMotion()) return;
+      gsap
+        .timeline()
+        .fromTo(menu, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.9, ease: 'power4.inOut' })
+        .from(items, { yPercent: 60, opacity: 0, duration: 0.8, stagger: 0.05, ease: 'power3.out' }, '-=0.45');
     };
 
-    toggle.addEventListener('click', () => {
-      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    // `then` runs after the dialog has closed, e.g. to jump to the chosen section.
+    const close = (then?: () => void) => {
+      const finish = () => {
+        menu.close();
+        document.documentElement.classList.remove('menu-open');
+        openButton.setAttribute('aria-expanded', 'false');
+        gsap.set([menu, ...items], { clearProps: 'all' });
+        if (then) then();
+        else openButton.focus();
+      };
+      if (reducedMotion()) return finish();
+      gsap.to(menu, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.7, ease: 'power4.inOut', onComplete: finish });
+    };
+
+    openButton.addEventListener('click', open);
+    closeButton.addEventListener('click', () => close());
+
+    // Escape: animate out instead of the dialog's instant close.
+    menu.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      close();
     });
 
-    // Close after choosing a link, and on Escape (returning focus to the toggle).
-    list.addEventListener('click', (event) => {
-      if ((event.target as HTMLElement).closest('a')) setOpen(false);
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
-        setOpen(false);
-        toggle.focus();
-      }
+    // Links: close the menu, then go to the section and move focus there.
+    menu.addEventListener('click', (event) => {
+      const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+      if (!link) return;
+      event.preventDefault();
+      const target = document.getElementById(link.hash.slice(1));
+      close(() => {
+        if (!target) return;
+        target.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' });
+        history.pushState(null, '', link.hash);
+        if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      });
     });
   }
 </script>

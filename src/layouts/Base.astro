@@ -24,7 +24,20 @@ const ogImage = new URL(site.ogImage, Astro.site);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script is:inline>
+      // js: scripts run. motion: animations allowed. intro: show the preloader (first visit only; key matches INTRO_KEY in motion.ts).
+      (function () {
+        var root = document.documentElement;
+        root.classList.add('js');
+        if (!window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+        root.classList.add('motion');
+        try {
+          if (!sessionStorage.getItem('am-intro-seen')) root.classList.add('intro');
+        } catch (e) {
+          root.classList.add('intro');
+        }
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
