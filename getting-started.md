@@ -76,7 +76,7 @@ Then connect the repo in Vercel and confirm the empty shell deploys.
 ## Session 3: sections and copy
 
 ```
-Write all page copy into src/data/content.ts following the copy guidelines in CLAUDE.md, then build every section component using it. Use labelled placeholders for photos. Use [TBC: ...] for any fact not listed in CLAUDE.md, and add each one to Open Questions.
+First view all 20 photos and map them in src/data/photos.ts (see Photography in CLAUDE.md), proposing a hero. Then write all page copy into src/data/content.ts following the copy guidelines in CLAUDE.md, and build every section component using it, with the real photos. Use [TBC: ...] for any fact not listed in CLAUDE.md, and add each one to Open Questions.
 
 Show me the copy for the hero, exclusive use and "why 100" sections before building the rest.
 ```

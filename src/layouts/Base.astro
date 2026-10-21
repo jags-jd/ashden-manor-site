@@ -1,0 +1,53 @@
+---
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/500.css';
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '../styles/global.css';
+import { site } from '../data/content';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Set on pages that shouldn't be indexed, e.g. the 404. */
+  noindex?: boolean;
+}
+
+const { title = site.title, description = site.description, noindex = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(site.ogImage, Astro.site);
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3b4034" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content={site.locale} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={site.ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

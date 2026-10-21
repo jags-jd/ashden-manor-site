@@ -1,0 +1,181 @@
+@import './tokens.css';
+
+/* Reset (minimal) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-height) + var(--space-4));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+picture,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--text-3xl);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
+
+p {
+  max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+/* Focus: visible on every interactive element, light and dark sections */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* Section themes. Dark sections use cream text, per the brand kit. */
+.theme-chalk {
+  --color-bg: var(--chalk);
+  --color-text: var(--ink);
+  --color-focus: var(--deep-olive);
+}
+
+.theme-linen {
+  --color-bg: var(--linen);
+  --color-text: var(--ink);
+  --color-focus: var(--deep-olive);
+}
+
+.theme-olive {
+  --color-bg: var(--deep-olive);
+  --color-text: var(--chalk);
+  --color-focus: var(--linen);
+}
+
+.theme-ink {
+  --color-bg: var(--ink);
+  --color-text: var(--linen);
+  --color-focus: var(--linen);
+}
+
+[class*='theme-'] {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Utilities */
+.container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--ink);
+  color: var(--linen);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline-color: var(--linen);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

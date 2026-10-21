@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import { notFound, site } from '../data/content';
+---
+
+<Base title={`${notFound.heading} | ${site.name}`} noindex>
+  <main id="main" class="theme-linen not-found">
+    <div class="container">
+      <h1>{notFound.heading}</h1>
+      <p>{notFound.body}</p>
+      <p><a href="/">{notFound.link}</a></p>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .not-found {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    text-align: center;
+  }
+
+  .not-found p {
+    margin-inline: auto;
+    margin-top: var(--space-4);
+  }
+</style>

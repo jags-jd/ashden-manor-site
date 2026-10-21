@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import SectionStub from '../components/SectionStub.astro';
+import { sections, site } from '../data/content';
+
+type Theme = 'chalk' | 'linen' | 'olive' | 'ink';
+
+// Light and dark sections alternate. The hero and footer carry the logo, so they stay light (see CLAUDE.md, Logo).
+const themes: Record<string, Theme> = {
+  top: 'linen',
+  'exclusive-use': 'chalk',
+  spaces: 'olive',
+  food: 'chalk',
+  'why-100': 'linen',
+  'your-day': 'olive',
+  pets: 'chalk',
+  'not-a-hotel': 'linen',
+  estimate: 'ink',
+  enquire: 'chalk',
+  faq: 'linen',
+};
+---
+
+<Base>
+  <Header />
+  <main id="main">
+    {
+      sections.map((section, i) => (
+        <SectionStub
+          section={section}
+          number={i + 1}
+          theme={themes[section.id] ?? 'chalk'}
+          isHero={section.id === 'top'}
+        />
+      ))
+    }
+  </main>
+  <footer class="theme-linen">
+    <div class="container footer-inner">
+      <p class="label">Section {sections.length + 1}</p>
+      <p>{site.name}</p>
+    </div>
+  </footer>
+</Base>
+
+<style>
+  .footer-inner {
+    padding-block: var(--space-8);
+  }
+</style>

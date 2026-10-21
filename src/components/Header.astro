@@ -1,0 +1,212 @@
+---
+import { header, sections, site } from '../data/content';
+
+const navItems = sections.filter((s) => s.inNav);
+---
+
+<a class="skip-link" href="#main">{header.skipLink}</a>
+
+<header class="site-header theme-chalk">
+  <div class="container bar">
+    <a class="wordmark" href="#top">{site.name}</a>
+
+    <nav class="nav" aria-label={header.navLabel}>
+      <button
+        class="menu-toggle label"
+        type="button"
+        aria-expanded="false"
+        aria-controls="site-nav-list"
+        data-open-label={header.menuOpen}
+        data-close-label={header.menuClose}
+      >
+        {header.menuOpen}
+      </button>
+      <ul id="site-nav-list" class="nav-list" role="list">
+        {
+          navItems.map((item) => (
+            <li>
+              <a class="nav-link label" href={`#${item.id}`}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <a class="enquire label" href={header.enquireHref}>{header.enquire}</a>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--stone);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--header-height);
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking-display);
+    text-transform: uppercase;
+    line-height: 1.1;
+    text-decoration: none;
+    margin-right: auto;
+    /* Stacks onto two lines on narrow phones so Menu and Enquire still fit. */
+    width: min-content;
+  }
+
+  /* Smallest phones (320px): tighten spacing so everything fits without dropping below 16px. */
+  @media (max-width: 23.99rem) {
+    .bar {
+      gap: var(--space-2);
+    }
+
+    .wordmark {
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+    }
+
+    .menu-toggle,
+    .enquire {
+      padding-inline: var(--space-2);
+      letter-spacing: 0.08em;
+    }
+  }
+
+  @media (min-width: 30rem) {
+    .bar {
+      gap: var(--space-4);
+    }
+
+    .wordmark {
+      width: auto;
+      white-space: nowrap;
+    }
+  }
+
+  .nav-link,
+  .menu-toggle,
+  .enquire {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem; /* 44px touch target */
+  }
+
+  .nav-link {
+    white-space: nowrap;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .nav-link:hover {
+    border-bottom-color: var(--bronze);
+  }
+
+  .menu-toggle {
+    padding-inline: var(--space-3);
+    background: none;
+    border: 1px solid var(--stone);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .enquire {
+    padding-inline: var(--space-4);
+    background: var(--deep-olive);
+    color: var(--chalk);
+    text-decoration: none;
+    border-radius: var(--radius);
+    transition: background-color var(--duration) var(--ease);
+  }
+
+  .enquire:hover {
+    background: var(--ink);
+  }
+
+  /* Phones: links collapse behind a Menu button and drop down below the bar. */
+  .nav-list {
+    display: none;
+    list-style: none;
+    padding: 0;
+  }
+
+  .nav-list.is-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: var(--space-2) var(--gutter) var(--space-4);
+    background: var(--chalk);
+    border-bottom: 1px solid var(--stone);
+  }
+
+  /* Without JavaScript there is no toggle, so show the links inline and let them wrap. */
+  :global(html:not(.js)) .menu-toggle {
+    display: none;
+  }
+
+  :global(html:not(.js)) .nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-4);
+  }
+
+  /* Inline links need roughly 1100px; below that they sit behind the Menu button. */
+  @media (min-width: 72rem) {
+    .menu-toggle {
+      display: none;
+    }
+
+    .nav-list,
+    .nav-list.is-open {
+      display: flex;
+      flex-direction: row;
+      gap: var(--space-5);
+      position: static;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+  const list = document.getElementById('site-nav-list');
+
+  if (toggle && list) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.textContent = (open ? toggle.dataset.closeLabel : toggle.dataset.openLabel) ?? '';
+      list.classList.toggle('is-open', open);
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+
+    // Close after choosing a link, and on Escape (returning focus to the toggle).
+    list.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+  }
+</script>

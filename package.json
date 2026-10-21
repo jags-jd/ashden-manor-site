@@ -1,0 +1,27 @@
+{
+  "name": "ashden-manor-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "astro": "^7.3.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}
