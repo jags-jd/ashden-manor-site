@@ -1,7 +1,7 @@
 ---
 /**
- * Your day, start to finish. On desktop with motion allowed, motion.ts pins the section and
- * scrolls the steps sideways (adds .is-horizontal). Otherwise it's a plain grid, so nothing is lost.
+ * Your day, start to finish. With motion allowed (phones and desktop), motion.ts pins the section
+ * and scrolls the steps sideways as you scroll down (adds .is-horizontal). Otherwise it's a plain grid, so nothing is lost.
  * The only link sits in the intro panel, which is on screen when the pin starts.
  */
 import Copy from './Copy.astro';
@@ -142,7 +142,7 @@ import { photos } from '../data/photos';
     }
   }
 
-  /* ---- Pinned horizontal scroll (desktop, motion allowed; class set by motion.ts) ---- */
+  /* ---- Pinned horizontal scroll (motion allowed; class set by motion.ts) ---- */
   .your-day:global(.is-horizontal) {
     display: grid;
     align-items: center;
@@ -187,5 +187,38 @@ import { photos } from '../data/photos';
 
   :global(.is-horizontal) .step :global(.photo) {
     max-height: 52svh;
+  }
+
+  /* Phones: the intro fills the first screen, then one step at a time slides in. */
+  @media (max-width: 55.99rem) {
+    :global(.is-horizontal) .track {
+      gap: var(--space-6);
+      padding-inline: var(--gutter) 12vw;
+    }
+
+    :global(.is-horizontal) .intro {
+      width: calc(100vw - 2 * var(--gutter));
+    }
+
+    :global(.is-horizontal) .steps {
+      gap: var(--space-6);
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      scroll-snap-type: none;
+    }
+
+    :global(.is-horizontal) .step {
+      width: min(78vw, 24rem);
+    }
+
+    :global(.is-horizontal) .step:nth-child(even),
+    :global(.is-horizontal) .step:nth-child(odd) {
+      margin-block: 0;
+    }
+
+    :global(.is-horizontal) .step :global(.photo) {
+      max-height: 48svh;
+    }
   }
 </style>

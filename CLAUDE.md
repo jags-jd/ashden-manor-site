@@ -310,7 +310,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - **Phones (below 56rem)** differ on purpose:
   - headlines reveal once rather than being tied to the scroll, so they're never left half-blurred;
   - sections have less padding (`--section-pad` floor 4.5rem);
-  - Your day is a swipeable row (focusable, `aria-label`);
+  - Your day keeps the pinned sideways scroll, as on desktop (Jan, 2026-10-22); the swipeable row is only the no-motion fallback;
   - the hotel comparison shows only an "At a hotel:" label;
   - the hero hides its second button and the crest;
   - the Spaces tabs are a row of pills directly above a square photo, and choosing one keeps the panel in view.
@@ -322,7 +322,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - **Footer is deliberately simple** (Jan): invitation and CTA, crest, contact, small print. No menu, photo strip or wordmark. Your day has no progress line.
 - **Hidden-until-animated content.** With motion on, the hero copy and photo start hidden (`html.motion`) and the preloader shows on the first visit of a session (`html.intro`). Both have CSS failsafes (3.5s and 4s) in case the script fails. Everything else is hidden by GSAP itself, so it stays visible without JavaScript.
 - **Bronze text.** Antique Bronze passes only as large display text, on Ink (4.1:1) or Chalk (3.6:1). That covers the Food and Pets headlines, and never labels or table headers. It fails on Linen and Olive, even when large.
-- **Rolling text.** `.roll-track` must keep its natural height (`flex: none`) or the hover slide lands halfway. Labels inside it must not wrap (`white-space: nowrap` is set).
+- **Rolling text.** The window is 1.5em tall (1.3em on the large menu links): at 1.3em, Safari on iPhone clipped the bottom of the letters. `.roll-track` must keep its natural height (`flex: none`) or the hover slide lands halfway. Labels inside it must not wrap (`white-space: nowrap` is set).
 - **Screenshots in dev** show Astro's dev toolbar as a small pill at the bottom centre. It isn't in the build.
 - **Placeholder prices are public-facing risk.** Never ship to the live domain with `IS_PLACEHOLDER = true` without Jan confirming that's acceptable.
 

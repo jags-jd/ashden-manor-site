@@ -242,12 +242,16 @@ a:hover {
 }
 
 /* Rolling text: the label and an aria-hidden copy stacked, sliding up on hover. */
+/*
+ * The window is a little taller than the letters (1.5em) because browsers place Cinzel slightly
+ * differently. Safari on iPhone clipped the bottom of the letters at 1.3em.
+ */
 .roll {
   display: inline-flex;
   overflow: hidden;
   white-space: nowrap;
-  height: 1.3em;
-  line-height: 1.3;
+  height: 1.5em;
+  line-height: 1.5;
 }
 
 /* Natural height (both copies), not stretched to the one-line window, so -50% moves exactly one line. */

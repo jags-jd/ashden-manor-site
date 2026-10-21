@@ -54,6 +54,8 @@ export function initMotion() {
 
     // Pins first, in page order, so every later trigger is measured with them in place.
     if (desktop) sectionTransitions(blocks, cleanups);
+    // Phones keep the sideways scroll of Your day (Jan's call), just not the stacked sections.
+    else blocks.filter((block) => block.hasAttribute('data-horizontal')).forEach((block) => horizontal(block, cleanups));
 
     intro(cleanups);
     headings(desktop, cleanups);
