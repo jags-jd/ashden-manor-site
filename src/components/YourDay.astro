@@ -4,7 +4,6 @@
  * and scrolls the steps sideways as you scroll down (adds .is-horizontal). Otherwise it's a plain grid, so nothing is lost.
  * The only link sits in the intro panel, which is on screen when the pin starts.
  */
-import Copy from './Copy.astro';
 import Cta from './Cta.astro';
 import Photo from './Photo.astro';
 import SectionHeader from './SectionHeader.astro';
@@ -22,7 +21,6 @@ import { photos } from '../data/photos';
         headingId="your-day-heading"
         body={yourDay.body}
       />
-      <p class="timings" data-reveal><Copy text={yourDay.timingsNote} /></p>
       <div data-reveal>
         <Cta href={yourDay.cta.href} label={yourDay.cta.label} />
       </div>
@@ -72,10 +70,6 @@ import { photos } from '../data/photos';
   .intro {
     display: grid;
     gap: var(--space-6);
-  }
-
-  .timings {
-    color: var(--stone);
   }
 
   .steps {
@@ -222,3 +216,16 @@ import { photos } from '../data/photos';
     }
   }
 </style>
+
+<script>
+  // The step list is a Tab stop only while it's a sideways-scrolling row (phones without motion);
+  // elsewhere there's nothing to scroll, so it shouldn't take focus.
+  for (const list of document.querySelectorAll<HTMLElement>('#your-day .steps')) {
+    const update = () => {
+      if (list.scrollWidth > list.clientWidth + 1) list.tabIndex = 0;
+      else list.removeAttribute('tabindex');
+    };
+    update();
+    new ResizeObserver(update).observe(list);
+  }
+</script>

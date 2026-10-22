@@ -26,7 +26,7 @@ import p18 from '../assets/photos/18.png';
 import p19 from '../assets/photos/19.png';
 import p20 from '../assets/photos/20.jpg';
 
-export type PhotoSection = 'hero' | 'exclusive-use' | 'spaces' | 'food' | 'why-100' | 'your-day' | 'not-a-hotel' | 'unused';
+export type PhotoSection = 'hero' | 'exclusive-use' | 'spaces' | 'food' | 'why-100' | 'your-day' | 'not-a-hotel' | 'enquire' | 'unused';
 
 export interface VenuePhoto {
   /** Original file number as delivered by the client. */
@@ -169,7 +169,7 @@ export const photos = {
     file: 16,
     src: p16,
     description: 'Couple kissing beneath an arch of sparklers held by their guests.',
-    section: 'unused',
+    section: 'enquire',
     orientation: 'portrait',
     alt: 'A couple kissing beneath an arch of sparklers held by their guests.',
   },

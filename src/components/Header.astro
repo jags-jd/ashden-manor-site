@@ -443,25 +443,17 @@ const navItems = sections.filter((s) => s.inNav);
 
   /*
    * See-through while the page scrolls, solid again shortly after it stops (timing in the CSS).
-   * Compact corner buttons while scrolling down past the first half-screen; the full pill again
-   * as soon as you scroll up, or near the top. Works from any starting point, including a reload
-   * part-way down the page.
+   * The full pill shows only at the very top of the page; anywhere else it splits into the two
+   * corner buttons, whichever way you're scrolling (Jan's call). Also right after a reload
+   * part-way down.
    */
   const siteHeader = document.querySelector<HTMLElement>('.site-header');
   if (siteHeader) {
-    // Ignore small jitters (trackpads, mobile toolbars).
-    const THRESHOLD = 8;
+    // How far down the page counts as "the top", in pixels.
+    const TOP = 80;
     let settle: number | undefined;
-    let lastY = window.scrollY;
-    const compact = () => {
-      const y = window.scrollY;
-      if (y <= window.innerHeight * 0.5) siteHeader.classList.remove('is-compact');
-      else if (Math.abs(y - lastY) > THRESHOLD) siteHeader.classList.toggle('is-compact', y > lastY);
-      else return;
-      lastY = y;
-    };
-    // Reloaded part-way down: start compact, so the full pill appears on the first scroll up.
-    siteHeader.classList.toggle('is-compact', window.scrollY > window.innerHeight * 0.5);
+    const compact = () => siteHeader.classList.toggle('is-compact', window.scrollY > TOP);
+    compact();
     window.addEventListener(
       'scroll',
       () => {

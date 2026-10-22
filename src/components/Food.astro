@@ -4,7 +4,6 @@
  * headline and a short paragraph. The headline is Antique Bronze on Ink (4.1:1), which is
  * only allowed because it's large display text.
  */
-import Copy from './Copy.astro';
 import Cta from './Cta.astro';
 import Photo from './Photo.astro';
 import SectionHeader from './SectionHeader.astro';
@@ -25,7 +24,6 @@ const [first, second, third] = food.photos;
         headingId="food-heading"
         body={food.body}
       />
-      <p class="menu-note" data-reveal><Copy text={food.menuNote} /></p>
       <div data-reveal>
         <Cta href={food.cta.href} label={food.cta.label} />
       </div>
@@ -53,10 +51,6 @@ const [first, second, third] = food.photos;
 
   .text :global(.food-header h2) {
     color: var(--bronze);
-  }
-
-  .menu-note {
-    color: var(--stone);
   }
 
   /* Three photos, overlapping slightly at different heights. */

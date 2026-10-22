@@ -1,6 +1,7 @@
 /**
  * All page copy lives here so it can be edited without touching components.
- * Facts we don't have yet are marked [TBC: ...] and listed under Open Questions in CLAUDE.md.
+ * Facts we don't have yet are left out (Jan, 2026-10-22: no [TBC] placeholders on the page) and
+ * listed under Open Questions in CLAUDE.md. Never fill a gap with an invented fact.
  *
  * Style (2026-10-22 redesign): image-led and restrained. Each section has one headline and a
  * short paragraph; detail lives in the FAQ. Calm and confident, never salesy.
@@ -68,7 +69,6 @@ export const preloader = {
 
 export const hero = {
   logoAlt: 'Ashden Manor, established 2026',
-  location: '[TBC: village and county]',
   heading: 'The whole manor, for your whole day',
   lede: `A Georgian house in the English countryside, yours alone for ${GUEST_COUNT} guests, from the ceremony to the last dance.`,
   primaryCta: { label: 'See your estimate', href: '#estimate' },
@@ -124,7 +124,6 @@ export const food = {
   label: 'The food',
   heading: 'Cooked here, for you',
   body: 'Catering is in-house, and it is the centrepiece of the day rather than an afterthought. One team looks after the food from the first course to the evening party.',
-  menuNote: '[TBC: sample menus and what catering includes]',
   photos: ['crostini', 'hamCarving', 'canapes'],
   cta: { label: 'Ask about menus', href: '#enquire' },
 } as const;
@@ -169,7 +168,6 @@ export const yourDay = {
     },
   ],
   stepsLabel: 'Your day, step by step',
-  timingsNote: '[TBC: earliest ceremony time and evening finish time]',
   cta: { label: 'See your estimate', href: '#estimate' },
 } as const;
 
@@ -177,7 +175,6 @@ export const pets = {
   label: 'Pets welcome',
   heading: 'Four-legged guests welcome',
   body: 'Ashden Manor is pet-friendly. If your dog is part of the family, they can be part of the day. Ring-bearer duties optional.',
-  note: '[TBC: any house rules for pets]',
 } as const;
 
 export const notAHotel = {
@@ -198,12 +195,77 @@ export const estimate = {
   label: 'Prices',
   heading: 'An honest idea of cost',
   intro: `Choose a season and a day, and we'll show an estimated price for your wedding. Every wedding here is priced for ${GUEST_COUNT} guests.`,
+  formLabel: 'Price estimator',
+  seasonLegend: 'Season',
+  dayLegend: 'Day of the week',
+  seasons: {
+    peak: { label: 'Peak', detail: 'May to September' },
+    shoulder: { label: 'Shoulder', detail: 'April and October' },
+    offPeak: { label: 'Off-peak', detail: 'November to March' },
+  },
+  days: {
+    saturday: { label: 'Saturday' },
+    friSun: { label: 'Friday or Sunday' },
+    midweek: { label: 'Monday to Thursday' },
+  },
+  resultLabel: 'Estimated from',
+  guestsNote: `Priced for ${GUEST_COUNT} guests`,
+  venueHire: 'Venue hire',
+  catering: `Catering for ${GUEST_COUNT} guests`,
+  /** {price} is replaced with the per-guest figure from pricing.ts. */
+  cateringDetail: '{price} per guest',
+  guide: "A guide, not a quote. We'll confirm your price when you get in touch.",
+  placeholderNote: 'Illustrative figures: these are example prices, not our current rates.',
+  // Short: rolling-text buttons can't wrap, and this one sits inside the card on phones.
+  cta: 'Enquire now',
 } as const;
 
 export const enquire = {
   label: 'Enquire',
   heading: 'Tell us about your wedding',
   intro: "Share a little about your plans and we'll be in touch. No obligation, and no hard sell.",
+  formLabel: 'Enquiry form',
+  requiredNote: 'Fields marked * are required.',
+  fields: {
+    names: { label: 'Your names', hint: 'Both of you, if you like.' },
+    email: { label: 'Email' },
+    phone: { label: 'Phone', hint: 'Optional' },
+    date: { label: 'Preferred date', hint: 'Optional' },
+    flexible: { label: "We're flexible on dates" },
+    season: { label: 'Season', placeholder: 'Not sure yet' },
+    day: { label: 'Day of the week', placeholder: 'Not sure yet' },
+    message: { label: 'Anything you would like us to know', hint: 'Optional' },
+  },
+  /** Shown under a field when its check fails (codes from src/lib/validation.ts). */
+  errors: {
+    names: { required: 'Please tell us your names.' },
+    email: {
+      required: 'Please give us an email address, so we can reply.',
+      invalid: 'Please check your email address, for example name@example.com.',
+    },
+    phone: { invalid: 'Please check your phone number, or leave it blank.' },
+    date: {
+      invalid: 'Please choose a date from the calendar, or leave it blank.',
+      past: 'Please choose a date that has not passed yet.',
+    },
+    message: { tooLong: 'Please keep your message under {max} characters.' },
+  },
+  /** Announced when a submit finds problems; {count} is replaced with the number. */
+  errorSummary: { one: 'There is 1 thing to check before sending.', many: 'There are {count} things to check before sending.' },
+  /** Announced when a preferred date fills in season and day; {season} and {day} are replaced. */
+  dateFilled: 'Season and day set to match your date: {season}, {day}.',
+  submit: 'Send enquiry',
+  sending: 'Sending',
+  success: {
+    heading: 'Thank you',
+    /** {names} is replaced with what they typed. */
+    body: "Thank you, {names}. We've received your enquiry and will be in touch soon.",
+    again: 'Send another enquiry',
+  },
+  failure: "Sorry, your enquiry didn't go through. Please try again in a moment, or call us.",
+  /** Shown while the form isn't connected to anything (IS_PREVIEW in src/lib/enquiry.ts). */
+  previewNote: "Preview: this form isn't connected yet, so nothing you type here is sent.",
+  noScript: 'This form needs JavaScript. You can also reach us on the details below.',
 } as const;
 
 export const faq = {
@@ -212,7 +274,7 @@ export const faq = {
   items: [
     {
       question: `Is ${GUEST_COUNT} guests enough?`,
-      answer: `For most couples it's the right number. Every wedding here is for ${GUEST_COUNT} guests through the day, which is enough for everyone who matters and few enough that you'll talk to all of them. [TBC: whether evening-only guests are included in the ${GUEST_COUNT}]`,
+      answer: `For most couples it's the right number. Every wedding here is for ${GUEST_COUNT} guests through the day, which is enough for everyone who matters and few enough that you'll talk to all of them.`,
     },
     {
       question: 'Will it feel too formal?',
@@ -231,19 +293,19 @@ export const faq = {
     },
     {
       question: `Can we have fewer than ${GUEST_COUNT} guests?`,
-      answer: `Weddings are priced for ${GUEST_COUNT} guests. [TBC: whether the price changes for a smaller wedding]`,
+      answer: `Weddings are priced for ${GUEST_COUNT} guests. If you're planning something smaller, get in touch and we can talk it through.`,
     },
     {
       question: 'Where is Ashden Manor?',
-      answer: 'In the English countryside, at [TBC: address and directions].',
+      answer: "In the English countryside. We'll send you full directions when you get in touch.",
     },
     {
       question: 'Can you cater for dietary requirements?',
-      answer: 'Catering is in-house. [TBC: how dietary requirements are handled]',
+      answer: 'Catering is in-house, so tell us about any dietary requirements when you get in touch.',
     },
     {
       question: 'Can we bring our dog?',
-      answer: 'Yes, Ashden Manor is pet-friendly. [TBC: any house rules for pets]',
+      answer: 'Yes, Ashden Manor is pet-friendly.',
     },
   ],
 } as const;

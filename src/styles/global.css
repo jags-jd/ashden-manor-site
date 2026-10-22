@@ -230,6 +230,24 @@ a:hover {
   border-color: var(--linen);
 }
 
+/* A light panel inside a dark section (e.g. the estimate card): back to the light-section button. Must come after the dark rules. */
+.theme-olive .theme-linen .button-primary,
+.theme-olive .theme-chalk .button-primary,
+.theme-ink .theme-linen .button-primary,
+.theme-ink .theme-chalk .button-primary {
+  background-color: var(--deep-olive);
+  border-color: var(--deep-olive);
+  color: var(--chalk);
+}
+
+.theme-olive .theme-linen .button-primary:hover,
+.theme-olive .theme-chalk .button-primary:hover,
+.theme-ink .theme-linen .button-primary:hover,
+.theme-ink .theme-chalk .button-primary:hover {
+  background-color: var(--ink);
+  border-color: var(--ink);
+}
+
 .button-arrow {
   width: 1.5rem;
   height: auto;
@@ -322,14 +340,27 @@ button:focus-visible > .roll .roll-track,
 }
 
 /*
- * Hero intro: with motion allowed, the hero's copy and photo wait hidden for motion.ts to bring
- * them in. If the script never runs, they appear on their own after 3.5s.
+ * Hero intro (motion allowed). The heading waits hidden for motion.ts to bring it in word by word.
+ * The smaller copy is fully painted from the first frame, just 24px low, and slides up: it's the
+ * page's LCP element, so it must never be hidden. The photo is hidden only on desktop, where the
+ * preloader's curtain covers the page at first anyway; on phones it shows straight away.
+ * Once the script runs it adds .hero-ready and takes over. If it never runs, all of it appears
+ * after 3.5s.
  */
-html.motion [data-hero-heading],
-html.motion [data-hero-item],
-html.motion [data-hero-photo] {
+html.motion:not(.hero-ready) [data-hero-heading] {
   visibility: hidden;
   animation: intro-failsafe 0.01s linear 3.5s forwards;
+}
+
+@media (min-width: 56rem) {
+  html.motion:not(.hero-ready) [data-hero-photo] {
+    visibility: hidden;
+    animation: intro-failsafe 0.01s linear 3.5s forwards;
+  }
+}
+
+html.motion [data-hero-item] {
+  transform: translateY(1.5rem);
 }
 
 @keyframes intro-failsafe {
@@ -361,9 +392,11 @@ html.motion [data-hero-photo] {
   transform: translateY(-200%);
 }
 
+/* The ring sits inside the Ink box (Linen on Ink, 12.1:1), whatever is behind the link. */
 .skip-link:focus {
   transform: none;
   outline-color: var(--linen);
+  outline-offset: -5px;
 }
 
 @media (prefers-reduced-motion: reduce) {

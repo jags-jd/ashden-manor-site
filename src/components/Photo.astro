@@ -34,7 +34,7 @@ const {
 } = Astro.props;
 
 // Never ask for wider than the original: the delivered files are 675–1080px wide.
-const widths = [360, 540, 720, 1080].filter((w) => w < photo.src.width).concat(photo.src.width);
+const widths = [360, 540, 720, 900, 1080].filter((w) => w < photo.src.width).concat(photo.src.width);
 ---
 
 <div
@@ -48,6 +48,7 @@ const widths = [360, 540, 720, 1080].filter((w) => w < photo.src.width).concat(p
     alt={photo.alt}
     widths={widths}
     sizes={sizes}
+    quality={62}
     loading={eager ? 'eager' : 'lazy'}
     fetchpriority={eager ? 'high' : 'auto'}
     decoding={eager ? 'sync' : 'async'}

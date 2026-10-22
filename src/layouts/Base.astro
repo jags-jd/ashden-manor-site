@@ -31,6 +31,8 @@ const ogImage = new URL(site.ogImage, Astro.site);
         root.classList.add('js');
         if (!window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
         root.classList.add('motion');
+        // The preloader is desktop only: on phones it would delay the content on slower connections.
+        if (!window.matchMedia('(min-width: 56rem)').matches) return;
         try {
           if (!sessionStorage.getItem('am-intro-seen')) root.classList.add('intro');
         } catch (e) {

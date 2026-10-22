@@ -57,7 +57,7 @@ export function initMotion() {
     // Phones keep the sideways scroll of Your day (Jan's call), just not the stacked sections.
     else blocks.filter((block) => block.hasAttribute('data-horizontal')).forEach((block) => horizontal(block, cleanups));
 
-    intro(cleanups);
+    intro(desktop, cleanups);
     headings(desktop, cleanups);
     reveals();
     images();
@@ -70,13 +70,27 @@ export function initMotion() {
 
   // Fonts and lazy images settle the layout late; re-measure once everything has loaded.
   window.addEventListener('load', () => ScrollTrigger.refresh());
+
+  // Content that changes height after load (form errors, the enquiry success message, FAQ
+  // answers opening) moves everything below it: re-measure when the page's height changes.
+  const main = document.querySelector('main');
+  if (main && 'ResizeObserver' in window) {
+    let lastHeight = main.offsetHeight;
+    let timer: number | undefined;
+    new ResizeObserver(() => {
+      if (Math.abs(main.offsetHeight - lastHeight) < 2) return;
+      lastHeight = main.offsetHeight;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => ScrollTrigger.refresh(), 150);
+    }).observe(main);
+  }
 }
 
 /* ---------------------------------------------------------------------------
  * Hero intro (and the preloader on a first visit)
  * ------------------------------------------------------------------------- */
 
-function intro(cleanups: Array<() => void>) {
+function intro(desktop: boolean, cleanups: Array<() => void>) {
   const root = document.documentElement;
   const preloader = document.querySelector<HTMLElement>('[data-preloader]');
   const heading = document.querySelector<HTMLElement>('[data-hero-heading]');
@@ -86,24 +100,35 @@ function intro(cleanups: Array<() => void>) {
   const hidden = [heading, photo, ...items].filter((el): el is HTMLElement => el !== null);
 
   if (introPlayed) {
+    // Already played (the layout crossed a breakpoint): just show the hero in place.
     gsap.set(hidden, { visibility: 'visible' });
+    gsap.set(items, { y: 0 });
+    root.classList.add('hero-ready');
     return;
   }
   introPlayed = true;
+
+  // Take over from the CSS holding state (see global.css): same look, now set inline.
+  if (heading) gsap.set(heading, { visibility: 'hidden' });
+  if (photo && desktop) gsap.set(photo, { visibility: 'hidden' });
+  gsap.set(items, { y: 24 });
+  root.classList.add('hero-ready');
 
   const split = heading ? SplitText.create(heading, { type: 'words', mask: 'words', wordsClass: 'split-word' }) : null;
   if (split) cleanups.push(() => split.revert());
 
   const hero = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } });
-  hero.set(hidden, { visibility: 'visible' });
+  hero.set([heading, photo].filter(Boolean), { visibility: 'visible' });
+  // Desktop: unmask the photo. Phones: it's already showing (it's the biggest thing on screen), so only settle the zoom.
   if (photo) {
-    hero.fromTo(photo, { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.6, ease: 'power4.inOut' }, 0);
+    if (desktop) hero.fromTo(photo, { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.6, ease: 'power4.inOut' }, 0);
     const img = photo.querySelector('img');
     if (img) hero.fromTo(img, { scale: 1.3 }, { scale: 1, duration: 2.2, ease: 'power3.out' }, 0);
   }
   if (backdrop) hero.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 1.8, ease: 'power2.out' }, 0);
   if (split) hero.from(split.words, { yPercent: 110, duration: 1.3, stagger: 0.06 }, 0.35);
-  hero.from(items, { y: 24, opacity: 0, duration: 1.1, stagger: 0.08 }, 0.7);
+  // Slide only, no fade: the copy is painted from the first frame (see global.css).
+  hero.to(items, { y: 0, duration: 1.1, stagger: 0.08 }, 0.7);
 
   const showPreloader = root.classList.contains('intro') && preloader;
   if (!showPreloader) {
@@ -163,8 +188,9 @@ function headings(desktop: boolean, cleanups: Array<() => void>) {
   for (const el of all('[data-split]')) {
     const split = SplitText.create(el, { type: 'words', wordsClass: 'split-word' });
     cleanups.push(() => split.revert());
-    const from = { opacity: 0.08, filter: 'blur(10px)', yPercent: 25 };
-    const to = { opacity: 1, filter: 'blur(0px)', yPercent: 0 };
+    // Blur and rise only, at full opacity: a headline is never left faint (contrast stays AA).
+    const from = { filter: 'blur(10px)', yPercent: 25 };
+    const to = { filter: 'blur(0px)', yPercent: 0 };
     if (desktop) {
       gsap.fromTo(split.words, from, {
         ...to,
@@ -305,7 +331,7 @@ function stack(section: HTMLElement, next: HTMLElement, cleanups: Array<() => vo
   // by the whole pin's length.
   const setY = gsap.quickSetter([...section.children], 'y', 'px');
 
-  ScrollTrigger.create({
+  const pin = ScrollTrigger.create({
     trigger: section,
     start: 'top top',
     end: () => `+=${section.offsetHeight + holdTop() + holdEnd()}`,
@@ -317,6 +343,22 @@ function stack(section: HTMLElement, next: HTMLElement, cleanups: Array<() => vo
       setY(-gsap.utils.clamp(0, overflow(), scrolled));
     },
   });
+
+  // Keyboard focus inside the pinned section: the browser can't scroll pinned content into view,
+  // so work out the scroll position that brings the focused element near the middle of the screen.
+  const onFocus = (event: FocusEvent) => {
+    const target = event.target as HTMLElement;
+    requestAnimationFrame(() => {
+      const box = target.getBoundingClientRect();
+      if (box.top >= 0 && box.bottom <= window.innerHeight) return;
+      const currentY = Number(gsap.getProperty(section.children[0], 'y')) || 0;
+      const offsetInSection = box.top - section.getBoundingClientRect().top - currentY;
+      const wantedY = gsap.utils.clamp(-overflow(), 0, window.innerHeight * 0.4 - offsetInSection);
+      window.scrollTo({ top: pin.start + (wantedY < 0 ? holdTop() - wantedY : 0), behavior: 'auto' });
+    });
+  };
+  section.addEventListener('focusin', onFocus);
+  cleanups.push(() => section.removeEventListener('focusin', onFocus));
 
   // Recede as the next section covers it.
   gsap.fromTo(

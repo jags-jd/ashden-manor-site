@@ -39,7 +39,7 @@ This is **phase 1 of the real site**, not a prototype. Build it to production qu
 
 **Exception (Jan, 2026-10-22):** the footer and menu use made-up placeholder contact details (phone 01632 960 482 from Ofcom's range reserved for fiction, hello@ashdenmanor.co.uk, "Ashden Lane, Ashden, England"). They're not linked, and they must be replaced before launch (Open Question 2).
 
-**Anything not listed here is unknown.** No village or county name, distance from cities, chef names, menu dishes, awards, room counts, accommodation, parking, or testimonials. Where copy needs such a detail, use a visible placeholder like `[TBC: location]` and log it under Open Questions.
+**Anything not listed here is unknown.** No village or county name, distance from cities, chef names, menu dishes, awards, room counts, accommodation, parking, or testimonials. Where copy would need such a detail, leave it out and log it under Open Questions. Jan decided on 2026-10-22 that there are no visible `[TBC]` placeholders on the page. Never fill a gap with an invented fact.
 
 ---
 
@@ -124,9 +124,9 @@ Don't add a UI framework, CMS, CSS framework or backend in phase 1. If something
 9. **Price estimator:** see below
 10. **Enquiry form:** see below
 11. **FAQ:** the four worries plus practical questions, using `<details>`/`<summary>`
-12. **Footer:** logo, contact placeholders, `[TBC]` address, small print
+12. **Footer:** logo, contact details (made-up placeholders for now), small print
 
-A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" button that jumps to the estimator, Jan's call 2026-10-22; labels in Cinzel small caps; the monogram is hidden below 24rem) that stays in place. Past half the first screen it compacts into a round Menu button (top left) and a "See prices" text pill (top right) so it rarely covers text (Jan's choice, 2026-10-22). It turns see-through while scrolling and eases back to solid shortly after scrolling stops. Menu opens a full-screen `<dialog>` listing every section with its 01–10 marker. Smooth scroll that respects `prefers-reduced-motion`.
+A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" button that jumps to the estimator, Jan's call 2026-10-22; labels in Cinzel small caps; the monogram is hidden below 24rem) that stays in place. Away from the very top it splits into a round Menu button (top left) and a "See prices" text pill (top right), so it rarely covers text (Jan, 2026-10-22). It turns see-through while scrolling and eases back to solid shortly after scrolling stops. Menu opens a full-screen `<dialog>` listing every section with its 01–10 marker. Smooth scroll that respects `prefers-reduced-motion`.
 
 **Design principles (redesign, 2026-10-22, inspired by belgradearbor.rs):** restrained and image-led. Each section is mostly one large photo, one headline and a short paragraph, with lots of breathing room. Numbered markers (01, 02…) guide the eye. Information is broken into digestible pieces (tabs for the spaces, a horizontal timeline for the day). There's always a next step (See prices in the header, Enquire in the menu, a CTA in most sections, a closing invitation in the footer), but nothing pushes. Motion is deliberate, not everywhere.
 
@@ -176,7 +176,7 @@ Plus catering at **£95 per guest × 100 guests = £9,500**. Round the total to 
 - Preferred date (optional) + "We're flexible on dates" checkbox
 - Season / day preference (prefilled from the estimator if used)
 - Message (optional)
-- How did you hear about us? (optional select)
+- ~~How did you hear about us?~~ Removed at Jan's request (2026-10-22).
 
 **Behaviour:**
 - Native HTML validation plus custom inline error messages on blur and submit; errors linked with `aria-describedby`; focus moves to the first error
@@ -197,7 +197,7 @@ Claude writes all page copy from the brief above.
 - **Talk to the couple** ("you", "your guests").
 - **Short paragraphs.** Headlines under ~8 words.
 - **Avoid wedding clichés:** bespoke, fairytale, dream day, magical, once in a lifetime, nestled, picture-perfect, tie the knot, say "I do", happily ever after, breathtaking, stunning, luxury/luxurious (show it, don't say it).
-- **Never invent facts** (see Venue facts). Use `[TBC: ...]` placeholders.
+- **Never invent facts** (see Venue facts). Leave unknown details out and log them in Open Questions (no `[TBC]` on the page).
 - Keep all copy in `src/data/content.ts` (or Markdown in `src/content/`) so it can be edited without touching components.
 
 ---
@@ -284,7 +284,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - Lighthouse 90+ on Performance, Accessibility, Best Practices and SEO
 - Proper `<title>`, meta description, Open Graph tags and favicon (from the crest)
 - No console errors; `npm run build`, `npm run check` and tests all pass
-- Every `[TBC]` placeholder listed in Open Questions
+- Every detail left out of the copy is listed in Open Questions (item 9)
 
 ---
 
@@ -299,7 +299,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - **`astro.config.mjs` has no `// @ts-check`.** It reads `process.env` and `@types/node` isn't installed (adding it would need sign-off).
 - **Headless Edge screenshots** lay out wider than `--window-size` at phone widths. Load the page in a 375px/320px `<iframe>` instead.
 - **On-page crest.** Use `src/assets/brand/logo-ink.png` on light sections and `logo-linen.png` on dark ones, plus `monogram-bronze.png` for the header and preloader. All three are transparent and generated by `scripts/brand-icons.mjs`. Never use `logo.png`, which has a white box.
-- **`[TBC]` in copy** renders through `Copy.astro`, which italicises the placeholder. Use it for any copy string that might contain one.
+- **`Copy.astro` and `lib/tbc.ts`** still italicise any `[TBC: …]` in a copy string. Nothing on the page uses them now, but they're there if a placeholder is ever needed again.
 - **No `node:` imports in tests.** `astro check` type-checks `tests/` and `@types/node` isn't installed; read files with Vite's `?raw` import instead.
 - **Full-page screenshots** must use a real viewport height (e.g. 1440×900 plus `captureBeyondViewport`). A very tall window makes the `100svh` hero that tall.
 - **Header stays put** (Jan, 2026-10-22: no hide on scroll) and compacts to corner buttons once scrolled (`is-compact` in `Header.astro`). It floats over the top padding of each section, so `scroll-padding-top` is 0. Labels in compact mode are visually hidden, not removed, so the buttons keep their accessible names.
@@ -317,13 +317,40 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
   
   Check 320px for overflow after any copy change. Long single-line buttons are the usual cause.
 - **No `once: true` in ScrollTriggers.** After a reload part-way down the page, `once` triggers fire and kill themselves during setup, which crashes ScrollTrigger's refresh ("reading 'end'" of undefined) and leaves motion half-initialised. Use `toggleActions: PLAY_ONCE` (in `motion.ts`) instead. Test changes with a reload at the bottom of the page.
-- **Header on scroll**: it compacts while scrolling down past the first half-screen and returns to the full pill on any scroll up (or near the top). It also works after a reload part-way down.
+- **Header on scroll** (Jan, 2026-10-22): the full pill shows only at the very top (`scrollY` 80px or less). Anywhere else it splits into the corner buttons, scrolling up or down, and also right after a reload part-way down.
 - **Spaces tabs on desktop**: the two columns are bottom-aligned and the photo's height is capped (`100svh - --section-pad - 10rem`), so whenever the tabs are on screen the whole photo is too. That matters because the section is pinned and its content scrolls, so `scrollIntoView` can't help. Re-test at 1280×720 if the layout changes.
+- **Estimator (session 4, done 2026-10-22).**
+  - Data: `src/data/pricing.ts` holds `PRICING`, `SEASONS`, `DAYS`, `IS_PLACEHOLDER` and the defaults (Peak, Saturday).
+  - Maths: the pure functions in `src/lib/estimate.ts` (`estimate`, `roundToNearest`, `formatGBP` with whole pounds, `selectionToSearch` and `selectionFromSearch`).
+  - UI: `src/components/Estimate.astro` uses native radios, puts only the total in the `aria-live` region, and renders the default estimate on the server, so it works without JS.
+  - Phones repeat the total under the choices (aria-hidden), because the card sits below them.
+  - Tests: 24 in `tests/estimate.test.ts`, covering all nine combinations and the rounding (including halves).
+- **Enquiry form (session 5, done 2026-10-22).** It lives in `src/components/Enquire.astro`.
+  - Logic: pure validators in `src/lib/validation.ts` return error codes, and the messages are in `content.ts` (`enquire.errors`).
+  - Sending: `submitEnquiry()` in `src/lib/enquiry.ts` is the seam for a real handler. It waits 1.2s and reports success; `?enquiry=error` forces the failure state.
+  - Errors appear on blur (once a field has been typed in) and on submit, linked by `aria-describedby`. Focus goes to the first problem, and a status line says how many.
+  - States: loading (`aria-busy`, "Sending"), success (focus moves to "Thank you"), and failure (`role="alert"`, everything typed is kept).
+  - Without JavaScript the submit button stays disabled, so nothing can be posted.
+  - `IS_PREVIEW` is **false** (Jan, 2026-10-22: no preview note), even though phase 1 still sends nothing. Setting it to true shows a "Preview: this form isn't connected yet" note.
+  - Choosing a preferred date sets season and day: `selectionFromDate()` in `estimate.ts`, driven by `SEASON_BY_MONTH` and `DAY_BY_WEEKDAY` in `pricing.ts`. A polite status message announces the change.
+  - Verified keyboard-only in headless Edge. During use there were no non-GET requests, no request contained any typed data, nothing was written to the console, and storage was unchanged. Tests: `validation.test.ts` and `enquiry.test.ts` (the stub never calls fetch, sendBeacon, console or storage).
+- **`hidden` vs `display`.** A component style like `display: grid` overrides the `hidden` attribute. Add `[hidden] { display: none }` for anything you hide with it (form, success panel, tab list, errors).
+- **Height changes re-measure the scroll effects.** `motion.ts` watches `main` with a ResizeObserver and calls `ScrollTrigger.refresh()`, so form errors, the success message and FAQ answers don't throw the pinned sections out.
+- **Rolling-text buttons can't wrap.** Keep labels short (about 15 characters or fewer) or they overflow phones. That's why the estimator's button says "Enquire now".
+- **Buttons follow the nearest background.** A light card inside a dark section (`.theme-linen` inside `.theme-olive`) gets the light-section button; the rules are in global.css.
 - **Footer is deliberately simple** (Jan): invitation and CTA, crest, contact, small print. No menu, photo strip or wordmark. Your day has no progress line.
 - **Hidden-until-animated content.** With motion on, the hero copy and photo start hidden (`html.motion`) and the preloader shows on the first visit of a session (`html.intro`). Both have CSS failsafes (3.5s and 4s) in case the script fails. Everything else is hidden by GSAP itself, so it stays visible without JavaScript.
 - **Bronze text.** Antique Bronze passes only as large display text, on Ink (4.1:1) or Chalk (3.6:1). That covers the Food and Pets headlines, and never labels or table headers. It fails on Linen and Olive, even when large.
 - **Rolling text.** The window is 1.5em tall (1.3em on the large menu links): at 1.3em, Safari on iPhone clipped the bottom of the letters. `.roll-track` must keep its natural height (`flex: none`) or the hover slide lands halfway. Labels inside it must not wrap (`white-space: nowrap` is set).
 - **Screenshots in dev** show Astro's dev toolbar as a small pill at the bottom centre. It isn't in the build.
+- **Performance (keep Lighthouse mobile at 90 or above).**
+  - The hero copy must never be hidden or faded: it's the LCP element. It's painted from the first frame and only slides into place.
+  - The hero photo is hidden only on desktop, where the preloader curtain covers it anyway.
+  - The preloader is desktop only, and motion is set up in `requestIdleCallback`.
+  - CSS is inlined.
+  - Photos use `quality={62}` (the hero 60). Give `sizes` the real column width.
+  - Lighthouse's simulated mobile LCP counts every request that starts before first paint, so avoid extra eager images and fonts. Details are in `docs/quality-pass-2026-10-22.md`.
+- **Headline reveals use blur and rise only, never opacity**, so an unrevealed headline never fails contrast.
 - **Placeholder prices are public-facing risk.** Never ship to the live domain with `IS_PLACEHOLDER = true` without Jan confirming that's acceptable.
 
 ---
@@ -353,7 +380,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 
 **Session 3 done (2026-10-22):** all 20 photos mapped in `src/data/photos.ts` (section placement, alt text; 3, 4, 10, 11 and 16 currently unused). All copy is in `content.ts`. Every section is a real component (`src/components/*.astro`) with real photos; the estimate and enquiry sections hold their heading and intro only, ready for sessions 4 and 5. `pricing.ts` has `GUEST_COUNT` only so far. Tests now also guard the copy (banned clichés, no typed guest count). Checked at 1440px and 375px.
 
-**Next session goal:** Jan to review the redesign in the browser. Then Session 4, the price estimator (styled to the new principles, perhaps as stages like the reference's instalment plan).
+**Next session goal:** Pre-launch with Jan: answer Open Questions 8 (placeholder prices live), 11 (form that sends nothing) and 2 (made-up contact details), test on a real iPhone and Android, then push. The quality pass is done (2026-10-22); see `docs/quality-pass-2026-10-22.md`. Lighthouse: mobile 91/100/100/100, desktop 98/100/100/100.
 
 **Hero photo:** photo 20 (`photos.manorFromAbove`), aerial view of the house and lawns. Jan to confirm. On desktop it's a two-column grid: copy beside the photo in an arch, over a blurred copy of the photo, with type and photo scaled by screen height so it fits from 1280×720 up. Phones show it full-bleed under a dark gradient.
 
@@ -392,8 +419,9 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 6. **Guest numbers**: fixed at 100. Does that include evening-only guests, and is the price the same if a couple brings fewer?
 7. **Domain**: what domain will the site live on?
 8. **Placeholder prices on launch**: is the client happy to go live with illustrative figures, or should the estimator be hidden until real prices arrive? Note: every push to `main` deploys to production, so the `vercel.app` URL is effectively live from the first deploy.
-9. **Copy placeholders** (each shows on the page as an italic `[TBC: ...]`): sample menus and what catering includes; earliest ceremony time and evening finish; house rules for pets; whether evening-only guests count towards the 100; whether the price changes for a smaller wedding; dietary requirements; email, phone and address (footer); village and county (hero).
+9. **Details left out of the copy** (they were `[TBC]` placeholders until Jan removed them on 2026-10-22; add them back as real copy once known): sample menus and what catering includes; earliest ceremony time and evening finish; house rules for pets; whether evening-only guests count towards the 100; whether the price changes for a smaller wedding; dietary requirements; email, phone and address (footer); village and county (hero).
 10. **Newsletter**: the reference site has a sign-up form. Does the client want one? It would need a backend, consent wording and a privacy policy, so it's not for phase 1.
+11. **Live form that sends nothing**: Jan removed the preview note (2026-10-22). While the site is public and phase 1 sends nothing, a couple could believe they've enquired. Wire a real handler (Open Question 5) before sharing the site widely.
 
 ---
 

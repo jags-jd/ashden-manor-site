@@ -9,7 +9,6 @@
  */
 import { Image, getImage } from 'astro:assets';
 import Cta from './Cta.astro';
-import Copy from './Copy.astro';
 import crest from '../assets/brand/logo-linen.png';
 import { hero } from '../data/content';
 import { heroPhoto } from '../data/photos';
@@ -24,8 +23,8 @@ const widths = [360, 540, heroPhoto.src.width];
 
   <div class="inner container">
     <div class="copy">
-      <Image class="crest" src={crest} alt={hero.logoAlt} width={240} loading="eager" data-hero-item />
-      <p class="label location" data-hero-item><Copy text={hero.location} /></p>
+      <!-- Lazy: hidden on phones (display: none), so it's never downloaded there; on desktop it's above the fold and loads at once. -->
+      <Image class="crest" src={crest} alt={hero.logoAlt} width={240} loading="lazy" data-hero-item />
       <h1 id="top-heading" data-hero-heading>{hero.heading}</h1>
       <p class="lede" data-hero-item>{hero.lede}</p>
       <div class="ctas" data-hero-item>
@@ -40,6 +39,7 @@ const widths = [360, 540, heroPhoto.src.width];
         alt={heroPhoto.alt}
         widths={widths}
         sizes="(min-width: 56rem) 34vw, 100vw"
+        quality={60}
         loading="eager"
         fetchpriority="high"
       />
@@ -101,10 +101,6 @@ const widths = [360, 540, heroPhoto.src.width];
   .crest {
     display: none;
     height: auto;
-  }
-
-  .location {
-    color: var(--stone);
   }
 
   h1 {
