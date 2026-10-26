@@ -26,6 +26,16 @@ html {
   }
 }
 
+/*
+ * Phones: the pricing tool's total bar sticks to the bottom of the screen. Reserve that space so
+ * keyboard focus is always scrolled clear of it (WCAG 2.2, Focus Not Obscured).
+ */
+@media (max-width: 55.99rem) {
+  html {
+    scroll-padding-bottom: 5rem;
+  }
+}
+
 body {
   min-height: 100vh;
   background-color: var(--color-bg);

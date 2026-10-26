@@ -6,12 +6,20 @@
  * Style (2026-10-22 redesign): image-led and restrained. Each section has one headline and a
  * short paragraph; detail lives in the FAQ. Calm and confident, never salesy.
  */
-import { GUEST_COUNT } from './pricing';
+import { formatGBP } from '../lib/estimate';
+import {
+  DRESSING_ROOM_NIGHT_BEFORE_PRICE,
+  EVENING_GUEST_PRICE,
+  EXTRA_DAY_GUEST_PRICE,
+  GARDEN_CEREMONY_PRICE,
+  INCLUDED_GUESTS,
+  MAX_GUESTS,
+} from './pricing';
 
 export const site = {
   name: 'Ashden Manor',
   title: 'Ashden Manor | Exclusive-use weddings in a Georgian manor',
-  description: `A Georgian manor in the English countryside, yours alone for the day. Weddings for ${GUEST_COUNT} guests with in-house catering, from ceremony to evening party.`,
+  description: `A Georgian manor in the English countryside, yours alone for the day. Weddings for up to ${MAX_GUESTS} guests with in-house catering, from ceremony to evening party.`,
   locale: 'en_GB',
   ogImage: '/og-image.jpg',
   ogImageAlt: 'The Ashden Manor crest with the AM monogram, on warm linen',
@@ -26,18 +34,17 @@ export interface Section {
   inNav: boolean;
 }
 
-/** Page sections in order. The menu and the 01, 02, 03 markers are built from this list. */
+/** Page sections in order. The menu and the 01, 02, 03 markers are built from this list. The enquiry lives inside Prices (#enquire is its last step). */
 export const sections: readonly Section[] = [
   { id: 'top', label: 'Welcome', inNav: false },
   { id: 'exclusive-use', label: 'The manor', inNav: true },
   { id: 'spaces', label: 'The spaces', inNav: true },
   { id: 'food', label: 'The food', inNav: true },
-  { id: 'why-100', label: `Why ${GUEST_COUNT}`, inNav: true },
+  { id: 'why-100', label: `Why ${MAX_GUESTS}`, inNav: true },
   { id: 'your-day', label: 'Your day', inNav: true },
   { id: 'pets', label: 'Pets welcome', inNav: true },
   { id: 'not-a-hotel', label: 'Not a hotel', inNav: true },
   { id: 'estimate', label: 'Prices', inNav: true },
-  { id: 'enquire', label: 'Enquire', inNav: true },
   { id: 'faq', label: 'Questions', inNav: true },
 ];
 
@@ -70,7 +77,7 @@ export const preloader = {
 export const hero = {
   logoAlt: 'Ashden Manor, established 2026',
   heading: 'The whole manor, for your whole day',
-  lede: `A Georgian house in the English countryside, yours alone for ${GUEST_COUNT} guests, from the ceremony to the last dance.`,
+  lede: `A Georgian house in the English countryside, yours alone for up to ${MAX_GUESTS} guests, from the ceremony to the last dance.`,
   primaryCta: { label: 'See your estimate', href: '#estimate' },
   secondaryCta: { label: 'Explore the manor', href: '#exclusive-use' },
 } as const;
@@ -129,11 +136,11 @@ export const food = {
 } as const;
 
 export const why100 = {
-  label: `Why ${GUEST_COUNT}`,
-  count: GUEST_COUNT,
+  label: `Why ${MAX_GUESTS}`,
+  count: MAX_GUESTS,
   countLabel: 'guests',
   heading: 'Every one of them matters',
-  body: `Every wedding here is for ${GUEST_COUNT} guests. It isn't a limit we apologise for. It's the point.`,
+  body: `Weddings here are for up to ${MAX_GUESTS} guests. It isn't a limit we apologise for. It's the point.`,
   points: [
     { title: 'Time for everyone', body: 'You talk to every guest, not just wave across a room.' },
     { title: 'Nobody gets lost', body: 'No table at the back. Everyone is close to the speeches and to you.' },
@@ -191,81 +198,101 @@ export const notAHotel = {
   closing: 'Privacy, personality and food that matters.',
 } as const;
 
+/**
+ * The pricing tool, which is also the enquiry: five numbered steps with an itemised total that
+ * updates as you go, ending with names and email so the venue gets a lead.
+ */
 export const estimate = {
   label: 'Prices',
-  heading: 'An honest idea of cost',
-  intro: `Choose a season and a day, and we'll show an estimated price for your wedding. Every wedding here is priced for ${GUEST_COUNT} guests.`,
-  formLabel: 'Price estimator',
-  seasonLegend: 'Season',
-  dayLegend: 'Day of the week',
+  /** The tool's name (Jan, 2026-10-27). The menu and header still say "Prices", so couples know what it is. */
+  heading: 'The MatchMaker',
+  intro: `An honest idea of cost, before you visit. Answer five quick questions and watch your price build as you go. Venue hire includes ${INCLUDED_GUESTS} guests, and you can welcome up to ${MAX_GUESTS} in all.`,
+  formLabel: 'The MatchMaker: price estimate and enquiry',
+  steps: {
+    season: 'When would you like to marry?',
+    day: 'Which day of the week?',
+    guests: 'How many guests?',
+    extras: 'Anything extra?',
+    details: 'Happy with your match?',
+  },
   seasons: {
-    peak: { label: 'Peak', detail: 'May to September' },
-    shoulder: { label: 'Shoulder', detail: 'April and October' },
-    offPeak: { label: 'Off-peak', detail: 'November to March' },
+    peak: { label: 'June to September' },
+    shoulder: { label: 'April, May or October' },
+    offPeak: { label: 'November to March' },
   },
   days: {
     saturday: { label: 'Saturday' },
     friSun: { label: 'Friday or Sunday' },
     midweek: { label: 'Monday to Thursday' },
   },
-  resultLabel: 'Estimated from',
-  guestsNote: `Priced for ${GUEST_COUNT} guests`,
+  dayGuests: {
+    label: 'Day guests',
+    hint: `${INCLUDED_GUESTS} included. ${formatGBP(EXTRA_DAY_GUEST_PRICE)} for each extra guest.`,
+    min: INCLUDED_GUESTS,
+    max: MAX_GUESTS,
+  },
+  eveningGuests: {
+    label: 'Evening guests',
+    hint: `Joining from 8pm. ${formatGBP(EVENING_GUEST_PRICE)} each.`,
+    min: 0,
+    /** The starting limit; the tool lowers it as day guests go up (see eveningGuestLimit). */
+    max: MAX_GUESTS - INCLUDED_GUESTS,
+  },
+  /** Under the guest counters: the overall limit, then how many evening places are left ({count} is replaced). */
+  guestLimit: `Up to ${MAX_GUESTS} guests in all, day and evening together.`,
+  eveningLeft: { none: 'No evening places left.', one: '1 evening place left.', many: '{count} evening places left.' },
+  /** Accessible names for the − and + buttons; {field} is replaced with the field's label. */
+  fewer: 'Fewer {field}',
+  more: 'More {field}',
+  extras: {
+    gardenCeremony: { label: 'Ceremony in the gardens', detail: `+${formatGBP(GARDEN_CEREMONY_PRICE)}, rather than the ceremony room` },
+    dressingRoom: { label: 'Dressing room the night before', detail: `+${formatGBP(DRESSING_ROOM_NIGHT_BEFORE_PRICE)}` },
+  },
+  resultLabel: 'Your estimate',
   venueHire: 'Venue hire',
-  catering: `Catering for ${GUEST_COUNT} guests`,
-  /** {price} is replaced with the per-guest figure from pricing.ts. */
-  cateringDetail: '{price} per guest',
-  guide: "A guide, not a quote. We'll confirm your price when you get in touch.",
+  /** {season}, {day} and {included} are replaced. */
+  venueDetail: '{season}, {day}. Includes {included} guests',
+  extraDayGuests: 'Additional day guests',
+  eveningGuestsRow: 'Evening guests',
+  /** {count} and {price} are replaced. */
+  perGuestDetail: '{count} × {price}',
+  gardenCeremony: 'Ceremony in the gardens',
+  dressingRoom: 'Dressing room the night before',
+  guide: "A guide, not a quote. We'll confirm your price when we reply.",
   placeholderNote: 'Illustrative figures: these are example prices, not our current rates.',
-  // Short: rolling-text buttons can't wrap, and this one sits inside the card on phones.
-  cta: 'Enquire now',
-} as const;
-
-export const enquire = {
-  label: 'Enquire',
-  heading: 'Tell us about your wedding',
-  intro: "Share a little about your plans and we'll be in touch. No obligation, and no hard sell.",
-  formLabel: 'Enquiry form',
-  requiredNote: 'Fields marked * are required.',
-  fields: {
+  /** Step 05: a button that opens the lead popup (names and email). */
+  details: {
+    body: "Send us your estimate and we'll be in touch about your wedding. No obligation, and no hard sell.",
+    // Short: rolling-text buttons can't wrap.
+    open: 'Enquire now',
+    /** The popup. */
+    title: 'Where should we reply?',
+    dialogBody: "Leave your names and email, and we'll get back to you about your wedding and this estimate.",
+    close: 'Close',
     names: { label: 'Your names', hint: 'Both of you, if you like.' },
     email: { label: 'Email' },
-    phone: { label: 'Phone', hint: 'Optional' },
-    date: { label: 'Preferred date', hint: 'Optional' },
-    flexible: { label: "We're flexible on dates" },
-    season: { label: 'Season', placeholder: 'Not sure yet' },
-    day: { label: 'Day of the week', placeholder: 'Not sure yet' },
-    message: { label: 'Anything you would like us to know', hint: 'Optional' },
-  },
-  /** Shown under a field when its check fails (codes from src/lib/validation.ts). */
-  errors: {
-    names: { required: 'Please tell us your names.' },
-    email: {
-      required: 'Please give us an email address, so we can reply.',
-      invalid: 'Please check your email address, for example name@example.com.',
+    /** Shown under a field when its check fails (codes from src/lib/validation.ts). */
+    errors: {
+      names: { required: 'Please tell us your names.' },
+      email: {
+        required: 'Please give us an email address, so we can reply.',
+        invalid: 'Please check your email address, for example name@example.com.',
+      },
     },
-    phone: { invalid: 'Please check your phone number, or leave it blank.' },
-    date: {
-      invalid: 'Please choose a date from the calendar, or leave it blank.',
-      past: 'Please choose a date that has not passed yet.',
+    /** Announced when a send finds problems; {count} is replaced with the number. */
+    errorSummary: { one: 'There is 1 thing to check before sending.', many: 'There are {count} things to check before sending.' },
+    // Short: rolling-text buttons can't wrap.
+    submit: 'Send enquiry',
+    sending: 'Sending',
+    success: {
+      heading: 'Thank you',
+      /** {names} and {total} are replaced. */
+      body: "Thank you, {names}. We've received your enquiry and your estimate of {total}, and we'll be in touch soon.",
+      again: 'Done',
     },
-    message: { tooLong: 'Please keep your message under {max} characters.' },
+    failure: "Sorry, your enquiry didn't go through. Please try again in a moment, or call us.",
+    noScript: 'Sending needs JavaScript. You can also reach us on the details below.',
   },
-  /** Announced when a submit finds problems; {count} is replaced with the number. */
-  errorSummary: { one: 'There is 1 thing to check before sending.', many: 'There are {count} things to check before sending.' },
-  /** Announced when a preferred date fills in season and day; {season} and {day} are replaced. */
-  dateFilled: 'Season and day set to match your date: {season}, {day}.',
-  submit: 'Send enquiry',
-  sending: 'Sending',
-  success: {
-    heading: 'Thank you',
-    /** {names} is replaced with what they typed. */
-    body: "Thank you, {names}. We've received your enquiry and will be in touch soon.",
-    again: 'Send another enquiry',
-  },
-  failure: "Sorry, your enquiry didn't go through. Please try again in a moment, or call us.",
-  /** Shown while the form isn't connected to anything (IS_PREVIEW in src/lib/enquiry.ts). */
-  previewNote: "Preview: this form isn't connected yet, so nothing you type here is sent.",
-  noScript: 'This form needs JavaScript. You can also reach us on the details below.',
 } as const;
 
 export const faq = {
@@ -273,8 +300,8 @@ export const faq = {
   heading: 'Questions couples ask',
   items: [
     {
-      question: `Is ${GUEST_COUNT} guests enough?`,
-      answer: `For most couples it's the right number. Every wedding here is for ${GUEST_COUNT} guests through the day, which is enough for everyone who matters and few enough that you'll talk to all of them.`,
+      question: `Is ${MAX_GUESTS} guests enough?`,
+      answer: `For most couples it's the right number. Weddings here are for up to ${MAX_GUESTS} guests through the day, which is enough for everyone who matters and few enough that you'll talk to all of them.`,
     },
     {
       question: 'Will it feel too formal?',
@@ -292,8 +319,8 @@ export const faq = {
         'Privacy, personality and food. Nobody else is here, the rooms have the character of a Georgian house, and the in-house kitchen makes dinner a centrepiece rather than a set menu.',
     },
     {
-      question: `Can we have fewer than ${GUEST_COUNT} guests?`,
-      answer: `Weddings are priced for ${GUEST_COUNT} guests. If you're planning something smaller, get in touch and we can talk it through.`,
+      question: `Can we have fewer than ${MAX_GUESTS} guests?`,
+      answer: `Yes. Venue hire includes ${INCLUDED_GUESTS} guests, and each additional day guest is ${formatGBP(EXTRA_DAY_GUEST_PRICE)}. Evening guests joining from 8pm are ${formatGBP(EVENING_GUEST_PRICE)} each. Day and evening guests together come to no more than ${MAX_GUESTS}.`,
     },
     {
       question: 'Where is Ashden Manor?',

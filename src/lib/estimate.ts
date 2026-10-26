@@ -1,41 +1,78 @@
 /**
  * The price estimate: pure functions, no DOM, so they're easy to test and reuse.
- * All figures come from src/data/pricing.ts.
+ * All figures come from src/data/pricing.ts. Totals are exact (real prices, no rounding).
  */
-import { DAY_BY_WEEKDAY, DAYS, PRICING, SEASON_BY_MONTH, SEASONS, type Day, type Pricing, type Season } from '../data/pricing';
+import { DAYS, PRICING, SEASONS, type Day, type Pricing, type Season } from '../data/pricing';
 
-export interface Estimate {
-  season: Season;
-  day: Day;
-  guests: number;
-  venueHire: number;
-  cateringPerGuest: number;
-  catering: number;
-  /** Venue hire plus catering, rounded to the nearest `pricing.roundTo`. */
-  total: number;
-}
-
+/** A season and pricing day. */
 export interface Selection {
   season: Season;
   day: Day;
 }
 
-/** Round to the nearest multiple of `step`; exact halves round up. */
-export function roundToNearest(value: number, step: number): number {
-  return Math.round(value / step) * step;
+/** Everything a couple can choose in the estimator. */
+export interface Choices extends Selection {
+  dayGuests: number;
+  eveningGuests: number;
+  gardenCeremony: boolean;
+  dressingRoom: boolean;
 }
 
-export function estimate(season: Season, day: Day, pricing: Pricing = PRICING): Estimate {
-  const venueHire = pricing.venueHire[season][day];
-  const catering = pricing.cateringPerGuest * pricing.guestCount;
+export interface Line {
+  count: number;
+  unit: number;
+  total: number;
+}
+
+export interface Estimate {
+  season: Season;
+  day: Day;
+  /** Day guests after keeping them within range. */
+  dayGuests: number;
+  /** Venue hire, which includes `pricing.includedGuests` guests. */
+  venueHire: number;
+  extraDayGuests: Line;
+  eveningGuests: Line;
+  /** The price of each extra, or 0 when it isn't chosen. */
+  gardenCeremony: number;
+  dressingRoom: number;
+  /** Everything added up, exactly. */
+  total: number;
+}
+
+/** A whole number between min and max; anything that isn't a number becomes `fallback`. */
+export function clampCount(value: number, min: number, max: number, fallback = min): number {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(Math.max(Math.round(value), min), max);
+}
+
+/** Most evening guests that still fit: day and evening guests together never pass `maxGuests`. */
+export function eveningGuestLimit(dayGuests: number, pricing: Pricing = PRICING): number {
+  return pricing.maxGuests - clampCount(dayGuests, pricing.includedGuests, pricing.maxGuests);
+}
+
+export function estimate(choices: Choices, pricing: Pricing = PRICING): Estimate {
+  const dayGuests = clampCount(choices.dayGuests, pricing.includedGuests, pricing.maxGuests);
+  // Day guests come first; evening guests are trimmed to whatever room is left.
+  const evening = clampCount(choices.eveningGuests, 0, eveningGuestLimit(dayGuests, pricing));
+  const venueHire = pricing.venueHire[choices.season][choices.day];
+  const extraCount = dayGuests - pricing.includedGuests;
+
+  const extraDayGuests = { count: extraCount, unit: pricing.extraDayGuestPrice, total: extraCount * pricing.extraDayGuestPrice };
+  const eveningGuests = { count: evening, unit: pricing.eveningGuestPrice, total: evening * pricing.eveningGuestPrice };
+  const gardenCeremony = choices.gardenCeremony ? pricing.gardenCeremonyPrice : 0;
+  const dressingRoom = choices.dressingRoom ? pricing.dressingRoomPrice : 0;
+
   return {
-    season,
-    day,
-    guests: pricing.guestCount,
+    season: choices.season,
+    day: choices.day,
+    dayGuests,
     venueHire,
-    cateringPerGuest: pricing.cateringPerGuest,
-    catering,
-    total: roundToNearest(venueHire + catering, pricing.roundTo),
+    extraDayGuests,
+    eveningGuests,
+    gardenCeremony,
+    dressingRoom,
+    total: venueHire + extraDayGuests.total + eveningGuests.total + gardenCeremony + dressingRoom,
   };
 }
 
@@ -46,7 +83,7 @@ const gbp = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 0,
 });
 
-/** Whole pounds, e.g. "£19,000". */
+/** Whole pounds, e.g. "£18,800". */
 export function formatGBP(amount: number): string {
   return gbp.format(amount);
 }
@@ -57,40 +94,4 @@ export function isSeason(value: unknown): value is Season {
 
 export function isDay(value: unknown): value is Day {
   return DAYS.includes(value as Day);
-}
-
-/*
- * Hand-off to the enquiry form: the estimator writes the couple's choice into the URL
- * (?season=…&day=…) and the form reads it back to prefill its season and day fields.
- */
-
-/** Read a season and day from a query string; null unless both are valid. */
-export function selectionFromSearch(search: string): Selection | null {
-  const params = new URLSearchParams(search);
-  const season = params.get('season');
-  const day = params.get('day');
-  return isSeason(season) && isDay(day) ? { season, day } : null;
-}
-
-/** Add (or replace) the season and day in a query string, keeping any other parameters. */
-export function selectionToSearch(selection: Selection, search = ''): string {
-  const params = new URLSearchParams(search);
-  params.set('season', selection.season);
-  params.set('day', selection.day);
-  return `?${params.toString()}`;
-}
-
-/**
- * The season and pricing day a calendar date falls in, from a yyyy-mm-dd string (as given by
- * <input type="date">). Null for anything that isn't a real date. Worked out in UTC, so the
- * visitor's time zone can't shift the day of the week.
- */
-export function selectionFromDate(iso: string): Selection | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!match) return null;
-  const [year, month, day] = match.slice(1).map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  // Rejects impossible dates such as 30 February, which Date would otherwise roll over.
-  if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
-  return { season: SEASON_BY_MONTH[month - 1], day: DAY_BY_WEEKDAY[date.getUTCDay()] };
 }

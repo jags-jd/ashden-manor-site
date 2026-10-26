@@ -57,19 +57,37 @@ export function initMotion() {
     // Phones keep the sideways scroll of Your day (Jan's call), just not the stacked sections.
     else blocks.filter((block) => block.hasAttribute('data-horizontal')).forEach((block) => horizontal(block, cleanups));
 
-    intro(desktop, cleanups);
-    headings(desktop, cleanups);
-    reveals();
-    images();
-    parallax();
-    counters(cleanups);
-    if (desktop) sectionProgress(blocks.filter((block) => block.matches('section')), cleanups);
+    // Everything else runs as a queue of small tasks, one per headline or kind of effect, with a
+    // pause between each, so the main thread is never blocked for long (keeps Lighthouse's Total
+    // Blocking Time down). context.add keeps each one reverting with this context.
+    const tasks: Array<() => void> = [
+      () => intro(desktop, cleanups),
+      ...all('[data-split]').map((el) => () => heading(el, desktop, cleanups)),
+      reveals,
+      images,
+      parallax,
+      () => counters(cleanups),
+      () => {
+        if (desktop) sectionProgress(blocks.filter((block) => block.matches('section')), cleanups);
+      },
+    ];
+    let alive = true;
+    const next = () => {
+      const task = tasks.shift();
+      if (!alive || !task) return;
+      context.add(task);
+      window.setTimeout(next, 0);
+    };
+    next();
 
-    return () => cleanups.forEach((fn) => fn());
+    return () => {
+      alive = false;
+      cleanups.forEach((fn) => fn());
+    };
   });
 
-  // Fonts and lazy images settle the layout late; re-measure once everything has loaded.
-  window.addEventListener('load', () => ScrollTrigger.refresh());
+  // No explicit refresh on window load: ScrollTrigger already re-measures itself when the page
+  // finishes loading, and a second pass over every pin is a long task.
 
   // Content that changes height after load (form errors, the enquiry success message, FAQ
   // answers opening) moves everything below it: re-measure when the page's height changes.
@@ -184,29 +202,27 @@ function intro(desktop: boolean, cleanups: Array<() => void>) {
  * middle of the screen. Phones: a short reveal that plays once, so a headline is never left
  * half-blurred on a small screen.
  */
-function headings(desktop: boolean, cleanups: Array<() => void>) {
-  for (const el of all('[data-split]')) {
-    const split = SplitText.create(el, { type: 'words', wordsClass: 'split-word' });
-    cleanups.push(() => split.revert());
-    // Blur and rise only, at full opacity: a headline is never left faint (contrast stays AA).
-    const from = { filter: 'blur(10px)', yPercent: 25 };
-    const to = { filter: 'blur(0px)', yPercent: 0 };
-    if (desktop) {
-      gsap.fromTo(split.words, from, {
-        ...to,
-        stagger: 0.12,
-        ease: 'none',
-        scrollTrigger: { trigger: el, start: 'top 90%', end: 'top 60%', scrub: 0.6 },
-      });
-    } else {
-      gsap.fromTo(split.words, from, {
-        ...to,
-        duration: 0.9,
-        stagger: 0.06,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: PLAY_ONCE },
-      });
-    }
+function heading(el: HTMLElement, desktop: boolean, cleanups: Array<() => void>) {
+  const split = SplitText.create(el, { type: 'words', wordsClass: 'split-word' });
+  cleanups.push(() => split.revert());
+  // Blur and rise only, at full opacity: a headline is never left faint (contrast stays AA).
+  const from = { filter: 'blur(10px)', yPercent: 25 };
+  const to = { filter: 'blur(0px)', yPercent: 0 };
+  if (desktop) {
+    gsap.fromTo(split.words, from, {
+      ...to,
+      stagger: 0.12,
+      ease: 'none',
+      scrollTrigger: { trigger: el, start: 'top 90%', end: 'top 60%', scrub: 0.6 },
+    });
+  } else {
+    gsap.fromTo(split.words, from, {
+      ...to,
+      duration: 0.9,
+      stagger: 0.06,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: PLAY_ONCE },
+    });
   }
 }
 

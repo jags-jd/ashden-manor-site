@@ -1,8 +1,16 @@
+import estimateSource from '../src/components/Estimate.astro?raw';
 import contentSource from '../src/data/content.ts?raw';
 import { describe, expect, it } from 'vitest';
 import * as content from '../src/data/content';
-import { sections } from '../src/data/content';
-import { GUEST_COUNT } from '../src/data/pricing';
+import { footer, header, sections } from '../src/data/content';
+import {
+  DRESSING_ROOM_NIGHT_BEFORE_PRICE,
+  EVENING_GUEST_PRICE,
+  EXTRA_DAY_GUEST_PRICE,
+  GARDEN_CEREMONY_PRICE,
+  INCLUDED_GUESTS,
+  MAX_GUESTS,
+} from '../src/data/pricing';
 
 /** Every string in the copy, however deeply nested. */
 function allStrings(value: unknown): string[] {
@@ -42,12 +50,14 @@ describe('page copy', () => {
     }
   });
 
-  it('takes the guest count from GUEST_COUNT rather than typing it', () => {
+  it('takes guest numbers and prices from pricing.ts rather than typing them', () => {
     const source = contentSource
       // Identifiers, not copy: the section's anchor id and its export name.
       .replaceAll('why-100', '')
       .replaceAll('why100', '');
-    expect(source).not.toContain(String(GUEST_COUNT));
+    for (const value of [MAX_GUESTS, INCLUDED_GUESTS, EXTRA_DAY_GUEST_PRICE, EVENING_GUEST_PRICE, GARDEN_CEREMONY_PRICE, DRESSING_ROOM_NIGHT_BEFORE_PRICE]) {
+      expect(source, String(value)).not.toMatch(new RegExp(`\\b${value}\\b`));
+    }
   });
 });
 
@@ -63,7 +73,11 @@ describe('page sections', () => {
     }
   });
 
-  it('include the enquiry form, which the header Enquire button links to', () => {
-    expect(sections.some((s) => s.id === 'enquire')).toBe(true);
+  it("send every Enquire link to the pricing tool's last step (#enquire)", () => {
+    expect(header.enquireHref).toBe('#enquire');
+    expect(footer.cta.href).toBe('#enquire');
+    expect(estimateSource).toContain('id="enquire"');
+    // The enquiry is part of Prices now, not a section of its own.
+    expect(sections.some((s) => s.id === 'enquire')).toBe(false);
   });
 });

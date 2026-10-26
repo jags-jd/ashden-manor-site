@@ -1,29 +1,69 @@
 ---
 /**
- * Price estimator. Season and day are native radio buttons (keyboard and screen readers work as
- * standard); the total is announced politely when it changes. All figures come from pricing.ts
- * via the pure functions in lib/estimate.ts. The default (Peak, Saturday) is rendered here, so a
- * number shows even without JavaScript.
+ * The pricing tool, which is also the enquiry (Jan, 2026-10-27). Five numbered steps on one screen:
+ * 01 season, 02 day, 03 guests, 04 extras, 05 names and email. An itemised total updates as the
+ * answers change: beside the steps on desktop (sticky), after step 04 on phones, where a small
+ * total bar also sticks to the bottom of the screen while answering.
  *
- * "Enquire about these dates" writes the choice into the URL (?season=…&day=…) and fires an
- * `estimate:select` event; the enquiry form reads either to prefill its fields.
+ * Step 05 sends a lead (names, email, every choice and the total) through submitEnquiry() in
+ * src/lib/enquiry.ts. Phase 1: nothing is sent anywhere. ?enquiry=error forces the failure state.
+ * The send button is disabled in the HTML and enabled by the script, so without JavaScript the
+ * form can't be posted anywhere. All figures come from pricing.ts via lib/estimate.ts.
  */
-import Cta from './Cta.astro';
+import Copy from './Copy.astro';
+import RollText from './RollText.astro';
 import SectionHeader from './SectionHeader.astro';
-import { estimate as copy } from '../data/content';
-import { DAYS, DEFAULT_DAY, DEFAULT_SEASON, IS_PLACEHOLDER, SEASONS } from '../data/pricing';
-import { estimate, formatGBP } from '../lib/estimate';
+import { estimate as copy, footer } from '../data/content';
+import {
+  DAYS,
+  DEFAULT_DAY,
+  DEFAULT_DAY_GUESTS,
+  DEFAULT_EVENING_GUESTS,
+  DEFAULT_SEASON,
+  INCLUDED_GUESTS,
+  IS_PLACEHOLDER,
+  SEASONS,
+} from '../data/pricing';
+import { estimate, eveningGuestLimit, formatGBP } from '../lib/estimate';
 
-const initial = estimate(DEFAULT_SEASON, DEFAULT_DAY);
-const venueLabel = (season: string, day: string) => `${season}, ${day}`;
+const initial = estimate({
+  season: DEFAULT_SEASON,
+  day: DEFAULT_DAY,
+  dayGuests: DEFAULT_DAY_GUESTS,
+  eveningGuests: DEFAULT_EVENING_GUESTS,
+  gardenCeremony: false,
+  dressingRoom: false,
+});
+
+const venueDetail = (season: string, day: string) =>
+  copy.venueDetail.replace('{season}', season).replace('{day}', day).replace('{included}', String(INCLUDED_GUESTS));
+const perGuest = (count: number, price: number) => copy.perGuestDetail.replace('{count}', String(count)).replace('{price}', formatGBP(price));
+
 const labels = {
   seasons: Object.fromEntries(SEASONS.map((s) => [s, copy.seasons[s].label])),
   days: Object.fromEntries(DAYS.map((d) => [d, copy.days[d].label])),
+  venueDetail: copy.venueDetail,
+  perGuest: copy.perGuestDetail,
+  included: INCLUDED_GUESTS,
+  eveningLeft: copy.eveningLeft,
 };
+
+/** "50 evening places left" and so on: the room left once day and evening guests are counted. */
+const eveningLeft = (left: number) =>
+  left === 0 ? copy.eveningLeft.none : left === 1 ? copy.eveningLeft.one : copy.eveningLeft.many.replace('{count}', String(left));
+const initialLeft = eveningGuestLimit(initial.dayGuests) - initial.eveningGuests.count;
+
+const counters = [
+  { id: 'est-day-guests', name: 'dayGuests', field: copy.dayGuests, value: DEFAULT_DAY_GUESTS, describedBy: 'est-day-guests-hint' },
+  { id: 'est-evening-guests', name: 'eveningGuests', field: copy.eveningGuests, value: DEFAULT_EVENING_GUESTS, describedBy: 'est-evening-guests-hint est-guest-limit' },
+] as const;
+
+const d = copy.details;
+const leadText = JSON.stringify({ errors: d.errors, summary: d.errorSummary, success: d.success.body, submit: d.submit, sending: d.sending });
 ---
 
-<section id="estimate" class="section theme-olive" aria-labelledby="estimate-heading" data-stack>
-  <div class="container layout">
+<section id="estimate" class="section theme-olive" aria-labelledby="estimate-heading">
+  <div class="container">
     <SectionHeader
       class="estimate-header"
       sectionId="estimate"
@@ -33,25 +73,24 @@ const labels = {
       body={copy.intro}
     />
 
-    <div class="choose">
-      <form class="estimator" aria-label={copy.formLabel} data-estimator data-reveal>
-        <fieldset>
-          <legend class="label">{copy.seasonLegend}</legend>
+    <form class="tool" aria-label={copy.formLabel} novalidate data-estimator data-lead={leadText}>
+      <div class="steps">
+        <fieldset class="step" data-reveal>
+          <legend><span class="step-number" aria-hidden="true">01</span><span class="step-title">{copy.steps.season}</span></legend>
           <div class="options">
             {
               SEASONS.map((season) => (
                 <label class="option">
                   <input class="visually-hidden" type="radio" name="season" value={season} checked={season === DEFAULT_SEASON} />
                   <span class="option-title">{copy.seasons[season].label}</span>
-                  <span class="option-detail">{copy.seasons[season].detail}</span>
                 </label>
               ))
             }
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend class="label">{copy.dayLegend}</legend>
+        <fieldset class="step" data-reveal>
+          <legend><span class="step-number" aria-hidden="true">02</span><span class="step-title">{copy.steps.day}</span></legend>
           <div class="options">
             {
               DAYS.map((day) => (
@@ -64,92 +103,214 @@ const labels = {
           </div>
         </fieldset>
 
-        <!-- Phones: the card is below, so repeat the total here. Screen readers hear it from the card. -->
-        <p class="summary" aria-hidden="true">
-          {copy.resultLabel} <strong data-total-mirror>{formatGBP(initial.total)}</strong>
+        <fieldset class="step" data-reveal>
+          <legend><span class="step-number" aria-hidden="true">03</span><span class="step-title">{copy.steps.guests}</span></legend>
+          <div class="counters">
+            {
+              counters.map((c) => (
+                <div class="counter">
+                  <label class="counter-label" for={c.id}>
+                    {c.field.label}
+                  </label>
+                  <p class="counter-hint" id={`${c.id}-hint`}>
+                    {c.field.hint}
+                  </p>
+                  <div class="stepper">
+                    <button
+                      class="step-button"
+                      type="button"
+                      data-step="-1"
+                      aria-controls={c.id}
+                      aria-label={copy.fewer.replace('{field}', c.field.label.toLowerCase())}
+                    >
+                      <span aria-hidden="true">−</span>
+                    </button>
+                    <input
+                      id={c.id}
+                      name={c.name}
+                      type="number"
+                      inputmode="numeric"
+                      min={c.field.min}
+                      max={c.field.max}
+                      step="1"
+                      value={c.value}
+                      aria-describedby={c.describedBy}
+                    />
+                    <button
+                      class="step-button"
+                      type="button"
+                      data-step="1"
+                      aria-controls={c.id}
+                      aria-label={copy.more.replace('{field}', c.field.label.toLowerCase())}
+                    >
+                      <span aria-hidden="true">+</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+          <p class="guest-limit" id="est-guest-limit">
+            {copy.guestLimit} <span data-evening-left>{eveningLeft(initialLeft)}</span>
+          </p>
+        </fieldset>
+
+        <fieldset class="step" data-reveal>
+          <legend><span class="step-number" aria-hidden="true">04</span><span class="step-title">{copy.steps.extras}</span></legend>
+          <div class="options">
+            {
+              (['gardenCeremony', 'dressingRoom'] as const).map((name) => (
+                <label class="option">
+                  <input class="visually-hidden" type="checkbox" name={name} value="1" />
+                  <span class="option-title">{copy.extras[name].label}</span>
+                  <span class="option-detail">{copy.extras[name].detail}</span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <!-- Phones: sticks to the bottom of the screen while answering. Screen readers hear the total from the card. -->
+        <p class="bar" aria-hidden="true">
+          <span>{copy.resultLabel}</span> <strong data-total-mirror>{formatGBP(initial.total)}</strong>
         </p>
-      </form>
-    </div>
-
-    <div
-      class="result theme-linen"
-      data-reveal
-      data-result
-      data-labels={JSON.stringify(labels)}
-    >
-      <p class="label result-label" aria-hidden="true">{copy.resultLabel}</p>
-      <p class="total" aria-live="polite" aria-atomic="true">
-        <span class="visually-hidden">{copy.resultLabel} </span><span data-total>{formatGBP(initial.total)}</span>
-      </p>
-      <p class="guests">{copy.guestsNote}</p>
-
-      <dl class="breakdown">
-        <div class="row">
-          <dt>
-            {copy.venueHire}
-            <span class="row-detail" data-venue-label>
-              {venueLabel(copy.seasons[DEFAULT_SEASON].label, copy.days[DEFAULT_DAY].label)}
-            </span>
-          </dt>
-          <dd data-venue>{formatGBP(initial.venueHire)}</dd>
-        </div>
-        <div class="row">
-          <dt>
-            {copy.catering}
-            <span class="row-detail">{copy.cateringDetail.replace('{price}', formatGBP(initial.cateringPerGuest))}</span>
-          </dt>
-          <dd data-catering>{formatGBP(initial.catering)}</dd>
-        </div>
-      </dl>
-
-      <p class="guide">{copy.guide}</p>
-      {IS_PLACEHOLDER && <p class="placeholder-note">{copy.placeholderNote}</p>}
-
-      <div data-estimate-cta>
-        <Cta href="#enquire" label={copy.cta} variant="primary" />
       </div>
-    </div>
+
+      <div class="result theme-linen" data-result data-labels={JSON.stringify(labels)}>
+        <p class="label result-label" aria-hidden="true">{copy.resultLabel}</p>
+        <p class="total" aria-live="polite" aria-atomic="true">
+          <span class="visually-hidden">{copy.resultLabel} </span><span data-total>{formatGBP(initial.total)}</span>
+        </p>
+        <!--
+          Desktop only, right under the total so it stays on screen while the card is sticky (the full
+          breakdown can be taller than the window). Phones reach step 05 straight after the card.
+        -->
+        <button class="button button-primary open-lead card-enquire" type="button" aria-haspopup="dialog" aria-controls="lead-dialog" disabled data-open-lead>
+          <RollText text={d.open} />
+        </button>
+
+        <dl class="breakdown">
+          <div class="row">
+            <dt>
+              {copy.venueHire}
+              <span class="row-detail" data-venue-detail>
+                {venueDetail(copy.seasons[DEFAULT_SEASON].label, copy.days[DEFAULT_DAY].label)}
+              </span>
+            </dt>
+            <dd data-venue>{formatGBP(initial.venueHire)}</dd>
+          </div>
+          <div class="row" data-row="extraDayGuests" hidden={initial.extraDayGuests.count === 0}>
+            <dt>
+              {copy.extraDayGuests}
+              <span class="row-detail" data-detail>{perGuest(initial.extraDayGuests.count, initial.extraDayGuests.unit)}</span>
+            </dt>
+            <dd data-amount>{formatGBP(initial.extraDayGuests.total)}</dd>
+          </div>
+          <div class="row" data-row="eveningGuests" hidden={initial.eveningGuests.count === 0}>
+            <dt>
+              {copy.eveningGuestsRow}
+              <span class="row-detail" data-detail>{perGuest(initial.eveningGuests.count, initial.eveningGuests.unit)}</span>
+            </dt>
+            <dd data-amount>{formatGBP(initial.eveningGuests.total)}</dd>
+          </div>
+          <div class="row" data-row="gardenCeremony" hidden={initial.gardenCeremony === 0}>
+            <dt>{copy.gardenCeremony}</dt>
+            <dd data-amount>{formatGBP(initial.gardenCeremony)}</dd>
+          </div>
+          <div class="row" data-row="dressingRoom" hidden={initial.dressingRoom === 0}>
+            <dt>{copy.dressingRoom}</dt>
+            <dd data-amount>{formatGBP(initial.dressingRoom)}</dd>
+          </div>
+        </dl>
+
+        <p class="guide">{copy.guide}</p>
+        {IS_PLACEHOLDER && <p class="placeholder-note">{copy.placeholderNote}</p>}
+      </div>
+
+      <!-- Step 05. #enquire: every "Enquire" link on the page lands here. The button opens the lead popup. -->
+      <div class="details step" id="enquire">
+        <p class="step-heading"><span class="step-number" aria-hidden="true">05</span><span class="step-title">{copy.steps.details}</span></p>
+        <p class="details-body">{d.body}</p>
+        <button class="button button-primary open-lead" type="button" aria-haspopup="dialog" aria-controls="lead-dialog" disabled data-open-lead>
+          <RollText text={d.open} />
+        </button>
+        <noscript><p class="hint"><Copy text={d.noScript} /> {footer.email}</p></noscript>
+      </div>
+
+      <!-- The lead popup. Inside the form, so its fields and send button belong to it. -->
+      <dialog class="lead-dialog theme-olive" id="lead-dialog" aria-labelledby="lead-title" data-details>
+        <div class="dialog-inner">
+          <button class="dialog-close" type="button" data-close-lead>
+            <span class="close-x" aria-hidden="true"></span>
+            <span class="visually-hidden">{d.close}</span>
+          </button>
+
+          <fieldset data-lead-fields>
+            <legend class="dialog-title display" id="lead-title">{d.title}</legend>
+            <p class="dialog-total">{copy.resultLabel} <strong data-dialog-total>{formatGBP(initial.total)}</strong></p>
+            <p class="details-body">{d.dialogBody}</p>
+
+            <div class="field">
+              <label for="lead-names">{d.names.label} <span class="required" aria-hidden="true">*</span></label>
+              <p class="hint" id="lead-names-hint">{d.names.hint}</p>
+              <input id="lead-names" name="names" type="text" autocomplete="name" required aria-describedby="lead-names-hint lead-names-error" />
+              <p class="field-error" id="lead-names-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label for="lead-email">{d.email.label} <span class="required" aria-hidden="true">*</span></label>
+              <input id="lead-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" required aria-describedby="lead-email-error" />
+              <p class="field-error" id="lead-email-error" hidden></p>
+            </div>
+
+            <p class="failure" role="alert" data-failure hidden>{d.failure}</p>
+            <p class="visually-hidden" role="status" data-status></p>
+
+            <button class="button button-primary submit" type="submit" disabled data-submit>
+              <span class="spinner" aria-hidden="true"></span>
+              <span data-submit-label><RollText text={d.submit} /></span>
+            </button>
+          </fieldset>
+
+          <div class="success" data-success hidden>
+            <p class="success-heading display" tabindex="-1" data-success-heading>{d.success.heading}</p>
+            <p data-success-body></p>
+            <button class="button button-secondary" type="button" data-again>
+              <RollText text={d.success.again} />
+            </button>
+          </div>
+        </div>
+      </dialog>
+    </form>
   </div>
 </section>
 
 <style>
-  .layout {
-    display: grid;
-    gap: var(--space-8);
+  /* "The MatchMaker" is one long word: shrink it on the narrowest phones so it never runs off screen. */
+  :global(.estimate-header h2) {
+    font-size: min(var(--text-4xl), 11vw);
   }
 
-  .choose {
+  /* ---- Layout: steps, then the card, then step 05 (phones); card beside the steps (desktop) ---- */
+  .tool {
+    display: grid;
+    grid-template-areas: 'steps' 'card' 'details';
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+  }
+
+  .steps {
+    grid-area: steps;
     display: grid;
     gap: var(--space-7);
   }
 
-  .summary {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-4);
-    max-width: none;
-    padding-top: var(--space-4);
-    border-top: 1px solid color-mix(in srgb, var(--linen) 25%, transparent);
-    font-family: var(--font-display);
-    font-size: var(--text-xs);
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-    color: var(--stone);
+  .result {
+    grid-area: card;
   }
 
-  .summary strong {
-    font-size: var(--text-xl);
-    font-weight: var(--weight-regular);
-    letter-spacing: 0.02em;
-    color: var(--chalk);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ---- Choices ---- */
-  .estimator {
-    display: grid;
-    gap: var(--space-6);
+  .details {
+    grid-area: details;
   }
 
   /* min-inline-size: fieldsets otherwise refuse to shrink below their content, overflowing phones. */
@@ -161,18 +322,33 @@ const labels = {
   }
 
   legend {
-    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
     padding: 0;
+  }
+
+  .step-number {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
     color: var(--stone);
   }
 
+  .step-title {
+    font-size: var(--text-lg);
+    font-style: italic;
+  }
+
+  /* ---- Pills: radios and checkboxes ---- */
   .options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
     gap: var(--space-2);
   }
 
-  /* position: relative keeps the visually hidden radio inside its pill, so tabbing scrolls to the pill. */
+  /* position: relative keeps the visually hidden input inside its pill, so tabbing scrolls to the pill. */
   .option {
     position: relative;
     display: grid;
@@ -187,6 +363,21 @@ const labels = {
       background-color var(--duration) var(--ease),
       border-color var(--duration) var(--ease),
       color var(--duration) var(--ease);
+  }
+
+  /*
+   * The radio or checkbox covers the whole pill, invisibly, so the browser scrolls the full pill into
+   * view on focus (clear of the phone total bar), not a 1px point in its corner.
+   */
+  .option input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    clip: auto;
+    opacity: 0;
+    cursor: pointer;
   }
 
   .option:hover {
@@ -221,9 +412,133 @@ const labels = {
     outline-offset: 3px;
   }
 
+  /* ---- Guest counters: − [number] + ---- */
+  .counters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: var(--space-5);
+  }
+
+  .counter {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .counter-label {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .counter-hint {
+    font-size: var(--text-xs);
+    color: var(--stone);
+  }
+
+  .guest-limit {
+    margin-block-start: var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--stone);
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .step-button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--linen) 45%, transparent);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--chalk);
+    font-size: var(--text-lg);
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background-color var(--duration) var(--ease),
+      color var(--duration) var(--ease);
+  }
+
+  .step-button:hover {
+    background: var(--linen);
+    color: var(--ink);
+  }
+
+  .step-button:focus-visible {
+    outline: 2px solid var(--linen);
+    outline-offset: 3px;
+  }
+
+  /* Soft Chalk figures on Deep Olive (9.5:1), with a Linen base line. */
+  .stepper input {
+    width: 4.5rem;
+    min-height: 2.75rem;
+    padding: 0 var(--space-2);
+    border: 0;
+    border-bottom: 1px solid var(--linen);
+    background: transparent;
+    color: var(--chalk);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .stepper input::-webkit-inner-spin-button,
+  .stepper input::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  .stepper input:focus-visible {
+    outline: 2px solid var(--linen);
+    outline-offset: 3px;
+  }
+
+  /* ---- Phones: total bar stuck to the bottom of the screen while answering ---- */
+  .bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    max-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: var(--space-3) var(--gutter);
+    border-top: 1px solid color-mix(in srgb, var(--linen) 25%, transparent);
+    background: var(--deep-olive);
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--stone);
+  }
+
+  .bar strong {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-regular);
+    letter-spacing: 0.02em;
+    color: var(--chalk);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ---- Result card: Ink on Warm Linen, with a gently arched top ---- */
   .result {
     display: grid;
+    align-content: start;
     gap: var(--space-4);
     padding: var(--space-8) var(--space-6) var(--space-7);
     border-radius: 50% 50% var(--radius) var(--radius) / 7rem 7rem var(--radius) var(--radius);
@@ -234,6 +549,13 @@ const labels = {
     color: var(--deep-olive);
   }
 
+  /* Desktop only (see the media query at the end). */
+  .card-enquire {
+    display: none;
+    justify-self: center;
+    margin-bottom: var(--space-2);
+  }
+
   .total {
     max-width: none;
     font-family: var(--font-display);
@@ -241,11 +563,6 @@ const labels = {
     line-height: 1;
     letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
-  }
-
-  .guests {
-    max-width: none;
-    font-style: italic;
   }
 
   .breakdown {
@@ -262,6 +579,11 @@ const labels = {
     gap: var(--space-4);
     padding-block: var(--space-3);
     border-bottom: 1px solid var(--stone);
+  }
+
+  /* display: flex would otherwise override the hidden attribute on lines that don't apply. */
+  .row[hidden] {
+    display: none;
   }
 
   dt {
@@ -294,87 +616,626 @@ const labels = {
     font-style: italic;
   }
 
-  [data-estimate-cta] {
-    margin-top: var(--space-3);
+  /* ---- Step 05: the button that opens the popup ---- */
+  .details {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-5);
+  }
+
+  .step-heading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+
+  .open-lead:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ---- The popup: names and email, on the section's Deep Olive so the field styles carry over ---- */
+  .lead-dialog {
+    width: min(100% - 2 * var(--space-4), 34rem);
+    max-height: calc(100svh - 2 * var(--space-4));
+    margin: auto;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--linen) 25%, transparent);
+    border-radius: 1.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lead-dialog::backdrop {
+    background: color-mix(in srgb, var(--ink) 75%, transparent);
+  }
+
+  .dialog-inner {
+    position: relative;
+    padding: var(--space-6) var(--space-5);
+  }
+
+  .dialog-inner fieldset {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .dialog-inner fieldset[hidden],
+  .success[hidden],
+  .failure[hidden],
+  .field-error[hidden] {
+    display: none;
+  }
+
+  .dialog-title {
+    float: left; /* lets the legend sit in the grid like any other child */
+    width: 100%;
+    padding-right: var(--space-8); /* clear of the close button */
+    font-size: var(--text-xl);
+  }
+
+  .dialog-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .dialog-total strong {
+    font-family: var(--font-body);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0;
+  }
+
+  .dialog-close {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    display: grid;
+    place-items: center;
+    width: 2.75rem; /* 44px touch target */
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .dialog-close:hover {
+    background: color-mix(in srgb, var(--linen) 12%, transparent);
+  }
+
+  .dialog-close:focus-visible {
+    outline: 2px solid var(--linen);
+    outline-offset: 2px;
+  }
+
+  /* An X made of two thin Linen lines, like the menu's. */
+  .close-x {
+    position: relative;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .close-x::before,
+  .close-x::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    border-top: 1px solid var(--linen);
+    transform: rotate(45deg);
+  }
+
+  .close-x::after {
+    transform: rotate(-45deg);
+  }
+
+  :global(html.lead-open) {
+    overflow: hidden;
+  }
+
+  @media (min-width: 40rem) {
+    .dialog-inner {
+      padding: var(--space-8) var(--space-7) var(--space-7);
+    }
+
+    .dialog-inner fieldset {
+      gap: var(--space-5);
+    }
+
+    .dialog-title {
+      font-size: var(--text-2xl);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lead-dialog[open] {
+      animation: lead-in 0.35s var(--ease-out);
+    }
+
+    .lead-dialog[open]::backdrop {
+      animation: lead-fade 0.35s ease-out;
+    }
+  }
+
+  @keyframes lead-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+
+  @keyframes lead-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .field {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .field label {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .hint {
+    font-size: var(--text-xs);
+    color: var(--stone);
+  }
+
+  /* Ink on Warm Linen fields (12.1:1), with a Soft Chalk base line on the Olive section. */
+  .field input {
+    width: 100%;
+    min-height: 3rem;
+    margin-top: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-bottom: 2px solid var(--chalk);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background-color: var(--linen);
+    color: var(--ink);
+    font-size: var(--text-base);
+  }
+
+  .field input:focus-visible {
+    outline: 2px solid var(--linen);
+    outline-offset: 3px;
+  }
+
+  /* Invalid: a thicker line plus the message below; never colour alone. */
+  .field input[aria-invalid='true'] {
+    border-bottom: 4px solid var(--chalk);
+  }
+
+  .field-error {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    max-width: none;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .field-error::before {
+    content: '!';
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: 50%;
+    background: var(--linen);
+    color: var(--ink);
+    font-size: 0.8em;
+    line-height: 1;
+  }
+
+  .failure {
+    max-width: none;
+    padding: var(--space-3) var(--space-4);
+    border-left: 3px solid var(--linen);
+    background: color-mix(in srgb, var(--ink) 35%, var(--deep-olive));
+    font-weight: var(--weight-semibold);
+  }
+
+  .submit {
+    justify-self: start;
+  }
+
+  .submit:disabled:not([aria-busy='true']) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    display: none;
+    width: 1rem;
+    height: 1rem;
+    border: 1.5px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .submit[aria-busy='true'] .spinner {
+    display: inline-block;
+  }
+
+  .submit[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .success {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-5);
+  }
+
+  .success-heading {
+    font-size: var(--text-3xl);
+  }
+
+  .success-heading:focus {
+    outline: none;
+  }
+
+  .success-heading:focus-visible {
+    outline: 2px solid var(--linen);
+    outline-offset: 4px;
   }
 
   /*
-   * Desktop: headline across the top, then the choices and the card side by side, so the total
-   * is always in view while choosing.
+   * Desktop: steps and step 05 down the left, the itemised card sticky on the right, so the total
+   * is always in view (the section isn't pinned, so sticky works).
    */
   @media (min-width: 56rem) {
-    .layout {
+    .tool {
       grid-template-columns: 6fr 5fr;
+      grid-template-areas:
+        'steps card'
+        'details card';
       column-gap: var(--space-10);
-      align-items: center;
-    }
-
-    .layout :global(.estimate-header) {
-      grid-column: 1 / -1;
-    }
-
-    .layout :global(.estimate-header h2) {
-      max-width: 22ch;
-    }
-
-    .summary {
-      display: none;
+      row-gap: var(--space-8);
+      align-items: start;
     }
 
     .result {
+      position: sticky;
+      top: calc(var(--header-top) + var(--header-pill) + var(--space-4));
       padding-inline: var(--space-7);
+    }
+
+    .bar {
+      display: none;
+    }
+
+    .card-enquire {
+      display: inline-flex;
     }
   }
 </style>
 
 <script>
-  import { estimate, formatGBP, isDay, isSeason, selectionToSearch } from '../lib/estimate';
+  import { clampCount, estimate, eveningGuestLimit, formatGBP, isDay, isSeason, type Choices } from '../lib/estimate';
+  import { submitEnquiry, wantsErrorState } from '../lib/enquiry';
+  import { validateField, validateLead, type FieldName, type LeadFields } from '../lib/validation';
 
   for (const form of document.querySelectorAll<HTMLFormElement>('[data-estimator]')) {
-    const section = form.closest('section');
-    const result = section?.querySelector<HTMLElement>('[data-result]');
-    if (!section || !result) continue;
+    const result = form.querySelector<HTMLElement>('[data-result]');
+    const details = form.querySelector<HTMLDialogElement>('dialog[data-details]');
+    // Two buttons open the popup: step 05, and the card on desktop. Focus goes back to whichever was used.
+    const openButtons = [...form.querySelectorAll<HTMLButtonElement>('[data-open-lead]')];
+    let opener: HTMLButtonElement | undefined = openButtons[0];
+    const closeLead = form.querySelector<HTMLButtonElement>('[data-close-lead]');
+    const dialogTotal = form.querySelector('[data-dialog-total]');
+    const leadFields = form.querySelector<HTMLFieldSetElement>('[data-lead-fields]');
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]');
+    const submitLabel = form.querySelector<HTMLElement>('[data-submit-label]');
+    const status = form.querySelector<HTMLElement>('[data-status]');
+    const failure = form.querySelector<HTMLElement>('[data-failure]');
+    const success = form.querySelector<HTMLElement>('[data-success]');
+    const successHeading = form.querySelector<HTMLElement>('[data-success-heading]');
+    const successBody = form.querySelector<HTMLElement>('[data-success-body]');
+    const again = form.querySelector<HTMLButtonElement>('[data-again]');
+    if (!result || !details || !opener || !closeLead || !leadFields || !submit || !submitLabel || !status || !failure || !success || !successHeading || !successBody || !again) continue;
+
+    /* ---------------- Estimate: an itemised total that updates as answers change ---------------- */
 
     const total = result.querySelector('[data-total]');
     const mirror = form.querySelector('[data-total-mirror]');
     const venue = result.querySelector('[data-venue]');
-    const venueLabel = result.querySelector('[data-venue-label]');
-    const catering = result.querySelector('[data-catering]');
+    const venueDetail = result.querySelector('[data-venue-detail]');
+    const row = (name: string) => result.querySelector<HTMLElement>(`[data-row="${name}"]`);
     const labels = JSON.parse(result.dataset.labels ?? '{}') as {
       seasons: Record<string, string>;
       days: Record<string, string>;
+      venueDetail: string;
+      perGuest: string;
+      included: number;
+      eveningLeft: { none: string; one: string; many: string };
+    };
+    const eveningLeftText = form.querySelector('[data-evening-left]');
+    const numberInput = (name: string) => form.elements.namedItem(name) as HTMLInputElement | null;
+
+    /** Keep a number input whole and within its own min and max. */
+    const tidy = (input: HTMLInputElement) => {
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const value = input.value.trim() === '' ? Number.NaN : Number(input.value);
+      input.value = String(clampCount(value, min, max, min));
     };
 
-    const selection = () => {
+    const choices = (): Choices | null => {
       const data = new FormData(form);
       const season = data.get('season');
       const day = data.get('day');
-      return isSeason(season) && isDay(day) ? { season, day } : null;
+      if (!isSeason(season) || !isDay(day)) return null;
+      return {
+        season,
+        day,
+        dayGuests: Number(numberInput('dayGuests')?.value),
+        eveningGuests: Number(numberInput('eveningGuests')?.value),
+        gardenCeremony: data.get('gardenCeremony') !== null,
+        dressingRoom: data.get('dressingRoom') !== null,
+      };
+    };
+
+    const setRow = (name: string, amount: number, detail?: string) => {
+      const el = row(name);
+      if (!el) return;
+      el.hidden = amount === 0;
+      const amountEl = el.querySelector('[data-amount]');
+      if (amountEl) amountEl.textContent = formatGBP(amount);
+      const detailEl = el.querySelector('[data-detail]');
+      if (detailEl && detail) detailEl.textContent = detail;
+    };
+
+    const perGuest = (count: number, unit: number) =>
+      labels.perGuest.replace('{count}', String(count)).replace('{price}', formatGBP(unit));
+
+    /**
+     * Day and evening guests together never pass the limit: day guests come first, and the
+     * evening field's max (and its value, unless someone is typing in it) shrinks to fit.
+     */
+    const fitEvening = (dayGuests: number) => {
+      const evening = numberInput('eveningGuests');
+      if (!evening) return;
+      const limit = eveningGuestLimit(dayGuests);
+      evening.max = String(limit);
+      if (document.activeElement !== evening && Number(evening.value) > limit) evening.value = String(limit);
+      const left = Math.max(limit - clampCount(Number(evening.value), 0, limit), 0);
+      if (eveningLeftText) {
+        const t = labels.eveningLeft;
+        eveningLeftText.textContent = left === 0 ? t.none : left === 1 ? t.one : t.many.replace('{count}', String(left));
+      }
     };
 
     const update = () => {
-      const chosen = selection();
+      const chosen = choices();
       if (!chosen) return;
-      const result = estimate(chosen.season, chosen.day);
+      const e = estimate(chosen);
+      fitEvening(e.dayGuests);
       // Only the total sits in the live region, so screen readers hear just the new figure.
-      if (total) total.textContent = formatGBP(result.total);
-      if (mirror) mirror.textContent = formatGBP(result.total);
-      if (venue) venue.textContent = formatGBP(result.venueHire);
-      if (catering) catering.textContent = formatGBP(result.catering);
-      if (venueLabel) venueLabel.textContent = `${labels.seasons[chosen.season]}, ${labels.days[chosen.day]}`;
+      if (total) total.textContent = formatGBP(e.total);
+      if (mirror) mirror.textContent = formatGBP(e.total);
+      if (venue) venue.textContent = formatGBP(e.venueHire);
+      if (venueDetail) {
+        venueDetail.textContent = labels.venueDetail
+          .replace('{season}', labels.seasons[e.season])
+          .replace('{day}', labels.days[e.day])
+          .replace('{included}', String(labels.included));
+      }
+      setRow('extraDayGuests', e.extraDayGuests.total, perGuest(e.extraDayGuests.count, e.extraDayGuests.unit));
+      setRow('eveningGuests', e.eveningGuests.total, perGuest(e.eveningGuests.count, e.eveningGuests.unit));
+      setRow('gardenCeremony', e.gardenCeremony);
+      setRow('dressingRoom', e.dressingRoom);
     };
 
-    form.addEventListener('change', update);
-    form.addEventListener('submit', (event) => event.preventDefault());
+    // Typing updates the total as you go; leaving a number field tidies it into range.
+    form.addEventListener('input', (event) => {
+      const target = event.target as HTMLElement;
+      if (!details.contains(target)) update();
+    });
+    form.addEventListener('change', (event) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement && target.type === 'number') tidy(target);
+      if (!(target instanceof Node) || !details.contains(target)) update();
+    });
 
-    // Carry the choice to the enquiry form: in the URL (survives a reload) and as an event.
-    section.querySelector('[data-estimate-cta] a')?.addEventListener('click', () => {
-      const chosen = selection();
+    // − and + buttons: one step, kept within range.
+    for (const button of form.querySelectorAll<HTMLButtonElement>('[data-step]')) {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.getAttribute('aria-controls') ?? '');
+        if (!(input instanceof HTMLInputElement)) return;
+        tidy(input);
+        input.value = String(clampCount(Number(input.value) + Number(button.dataset.step), Number(input.min), Number(input.max)));
+        update();
+      });
+    }
+
+    /* ---------------- Step 05: the lead ---------------- */
+
+    const text = JSON.parse(form.dataset.lead ?? '{}') as {
+      errors: Record<string, Record<string, string>>;
+      summary: { one: string; many: string };
+      success: string;
+      submit: string;
+      sending: string;
+    };
+    const fields: FieldName[] = ['names', 'email'];
+    // Show a field's error on blur only once the visitor has typed in it (or tried to send).
+    const touched = new Set<FieldName>();
+    let attempted = false;
+    let sending = false;
+
+    const control = (name: FieldName) => form.elements.namedItem(name) as HTMLInputElement | null;
+    const readLead = (): LeadFields => ({ names: control('names')?.value ?? '', email: control('email')?.value ?? '' });
+
+    const showError = (name: FieldName, code: string | undefined) => {
+      const input = control(name);
+      const error = form.querySelector<HTMLElement>(`#lead-${name}-error`);
+      if (!input || !error) return;
+      if (code) {
+        error.textContent = text.errors[name]?.[code] ?? '';
+        error.hidden = false;
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        error.textContent = '';
+        error.hidden = true;
+        input.removeAttribute('aria-invalid');
+      }
+    };
+
+    for (const name of fields) {
+      const input = control(name);
+      if (!input) continue;
+      input.addEventListener('input', () => {
+        touched.add(name);
+        // Once an error is showing, clear it as soon as the field is fixed.
+        if (input.getAttribute('aria-invalid') === 'true') showError(name, validateField(name, readLead()));
+      });
+      input.addEventListener('blur', () => {
+        if (touched.has(name) || attempted) showError(name, validateField(name, readLead()));
+      });
+    }
+
+    const setSending = (on: boolean) => {
+      sending = on;
+      form.setAttribute('aria-busy', String(on));
+      submit.setAttribute('aria-busy', String(on));
+      submit.disabled = on;
+      // Both copies of the rolling label change together.
+      submitLabel.querySelectorAll('.roll-track > span').forEach((span) => {
+        span.textContent = on ? text.sending : text.submit;
+      });
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      // Enter in a guest number (an implicit submit) just tidies the number; only step 05 sends.
+      const active = document.activeElement;
+      if (!(active instanceof Node) || !details.contains(active)) {
+        if (active instanceof HTMLInputElement && active.type === 'number') {
+          tidy(active);
+          update();
+        }
+        return;
+      }
+      if (sending) return;
+      attempted = true;
+      failure.hidden = true;
+
+      const lead = readLead();
+      const errors = validateLead(lead);
+      for (const name of fields) showError(name, errors[name]);
+      const problems = fields.filter((name) => errors[name]);
+      if (problems.length) {
+        status.textContent = problems.length === 1 ? text.summary.one : text.summary.many.replace('{count}', String(problems.length));
+        control(problems[0])?.focus();
+        return;
+      }
+
+      const chosen = choices();
       if (!chosen) return;
-      history.replaceState(null, '', `${selectionToSearch(chosen, location.search)}#enquire`);
-      window.dispatchEvent(new CustomEvent('estimate:select', { detail: chosen }));
+      const estimateNow = estimate(chosen);
+      setSending(true);
+      status.textContent = text.sending;
+      const sent = await submitEnquiry(
+        { names: lead.names.trim(), email: lead.email.trim(), choices: chosen, total: estimateNow.total },
+        { fail: wantsErrorState(location.search) },
+      );
+      setSending(false);
+
+      if (!sent.ok) {
+        // Keep everything they entered, say what happened, and leave the button ready to try again.
+        status.textContent = '';
+        failure.hidden = false;
+        submit.focus();
+        return;
+      }
+
+      status.textContent = '';
+      successBody.textContent = text.success.replace('{names}', lead.names.trim()).replace('{total}', formatGBP(estimateNow.total));
+      leadFields.hidden = true;
+      success.hidden = false;
+      successHeading.focus();
+    });
+
+    /* ---------------- The popup ---------------- */
+
+    // After a send, the next popup starts afresh; closing without sending keeps what was typed.
+    const resetLead = () => {
+      for (const name of fields) {
+        const input = control(name);
+        if (input) input.value = '';
+        showError(name, undefined);
+      }
+      attempted = false;
+      touched.clear();
+      failure.hidden = true;
+      successBody.textContent = '';
+      success.hidden = true;
+      leadFields.hidden = false;
+    };
+
+    const openPopup = (button: HTMLButtonElement) => {
+      opener = button;
+      const chosen = choices();
+      if (dialogTotal && chosen) dialogTotal.textContent = formatGBP(estimate(chosen).total);
+      document.documentElement.classList.add('lead-open');
+      details.showModal();
+      control('names')?.focus();
+    };
+    for (const button of openButtons) button.addEventListener('click', () => openPopup(button));
+
+    const close = () => {
+      if (!sending) details.close();
+    };
+    closeLead.addEventListener('click', close);
+    again.addEventListener('click', close);
+    // A click on the backdrop (the dialog itself, outside its inner panel) closes it too, but not
+    // a drag that started inside the panel (selecting text) and ended outside it.
+    let pressedOnBackdrop = false;
+    details.addEventListener('pointerdown', (event) => {
+      pressedOnBackdrop = event.target === details;
+    });
+    details.addEventListener('click', (event) => {
+      if (event.target === details && pressedOnBackdrop) close();
+    });
+    // Escape: not while sending.
+    details.addEventListener('cancel', (event) => {
+      if (sending) event.preventDefault();
+    });
+    details.addEventListener('close', () => {
+      document.documentElement.classList.remove('lead-open');
+      status.textContent = '';
+      if (!success.hidden) resetLead();
+      opener?.focus({ preventScroll: true });
     });
 
     update();
+    // Scripts are running, so the popup can open and the lead can be sent (both stay disabled without JavaScript).
+    for (const button of openButtons) button.disabled = false;
+    submit.disabled = false;
   }
 </script>

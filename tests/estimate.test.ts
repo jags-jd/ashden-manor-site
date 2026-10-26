@@ -1,28 +1,41 @@
 import { describe, expect, it } from 'vitest';
+import { estimate, eveningGuestLimit, formatGBP, type Choices } from '../src/lib/estimate';
 import {
-  estimate,
-  formatGBP,
-  roundToNearest,
-  selectionFromDate,
-  selectionFromSearch,
-  selectionToSearch,
-} from '../src/lib/estimate';
-import { DAYS, GUEST_COUNT, PRICING, SEASONS, type Day, type Pricing, type Season } from '../src/data/pricing';
+  DAYS,
+  DRESSING_ROOM_NIGHT_BEFORE_PRICE,
+  EVENING_GUEST_PRICE,
+  EXTRA_DAY_GUEST_PRICE,
+  GARDEN_CEREMONY_PRICE,
+  INCLUDED_GUESTS,
+  MAX_GUESTS,
+  PRICING,
+  SEASONS,
+  type Day,
+  type Season,
+} from '../src/data/pricing';
 
-describe('estimate: every season and day (placeholder pricing)', () => {
-  // Venue hire from CLAUDE.md plus catering at £95 × 100 guests (£9,500).
+/** Venue hire only: the included guests, nobody in the evening, no extras. */
+const base = (season: Season, day: Day): Choices => ({
+  season,
+  day,
+  dayGuests: INCLUDED_GUESTS,
+  eveningGuests: 0,
+  gardenCeremony: false,
+  dressingRoom: false,
+});
+
+describe('venue hire: every season and day (client prices, 2026-10-27)', () => {
   const expected: Record<Season, Record<Day, number>> = {
-    peak: { saturday: 19000, friSun: 17500, midweek: 15500 },
-    shoulder: { saturday: 17500, friSun: 16250, midweek: 14500 },
-    offPeak: { saturday: 16000, friSun: 15000, midweek: 13500 },
+    offPeak: { midweek: 4500, friSun: 6000, saturday: 8000 },
+    shoulder: { midweek: 5500, friSun: 7500, saturday: 10000 },
+    peak: { midweek: 6500, friSun: 9000, saturday: 12000 },
   };
 
   for (const season of SEASONS) {
     for (const day of DAYS) {
       it(`${season} / ${day}`, () => {
-        const result = estimate(season, day);
-        expect(result.venueHire).toBe(PRICING.venueHire[season][day]);
-        expect(result.catering).toBe(9500);
+        const result = estimate(base(season, day));
+        expect(result.venueHire).toBe(expected[season][day]);
         expect(result.total).toBe(expected[season][day]);
       });
     }
@@ -33,124 +46,123 @@ describe('estimate: every season and day (placeholder pricing)', () => {
   });
 });
 
-describe('estimate: breakdown', () => {
-  it('prices catering for the fixed guest count', () => {
-    const result = estimate('peak', 'saturday');
-    expect(result.guests).toBe(GUEST_COUNT);
-    expect(result.cateringPerGuest).toBe(PRICING.cateringPerGuest);
-    expect(result.catering).toBe(PRICING.cateringPerGuest * GUEST_COUNT);
+describe('day guests', () => {
+  it(`includes ${INCLUDED_GUESTS} guests in the venue hire`, () => {
+    const result = estimate(base('peak', 'saturday'));
+    expect(result.dayGuests).toBe(INCLUDED_GUESTS);
+    expect(result.extraDayGuests).toEqual({ count: 0, unit: EXTRA_DAY_GUEST_PRICE, total: 0 });
   });
 
-  it('echoes the selection it was given', () => {
-    const result = estimate('shoulder', 'midweek');
-    expect(result.season).toBe('shoulder');
-    expect(result.day).toBe('midweek');
+  it('charges each guest beyond the included number', () => {
+    for (const [guests, extra] of [
+      [51, 1],
+      [75, 25],
+      [100, 50],
+    ]) {
+      const result = estimate({ ...base('shoulder', 'midweek'), dayGuests: guests });
+      expect(result.extraDayGuests.count, `${guests} guests`).toBe(extra);
+      expect(result.extraDayGuests.total).toBe(extra * EXTRA_DAY_GUEST_PRICE);
+      expect(result.total).toBe(5500 + extra * EXTRA_DAY_GUEST_PRICE);
+    }
   });
 
-  it('uses whatever pricing it is passed, so real prices drop straight in', () => {
-    const custom: Pricing = { ...PRICING, guestCount: 80, cateringPerGuest: 110 };
-    const result = estimate('offPeak', 'midweek', custom);
-    expect(result.guests).toBe(80);
-    expect(result.catering).toBe(8800);
-    expect(result.total).toBe(roundToNearest(4000 + 8800, PRICING.roundTo));
-  });
-});
-
-describe('estimate: rounding to the nearest £250', () => {
-  // £97 a head makes catering £9,700, so the total is no longer a round number.
-  const odd: Pricing = { ...PRICING, cateringPerGuest: 97 };
-
-  it('rounds the total, not the breakdown', () => {
-    const result = estimate('peak', 'saturday', odd);
-    expect(result.catering).toBe(9700);
-    expect(result.total).toBe(19250); // 9,500 + 9,700 = 19,200 → 19,250
+  it(`keeps the number between ${INCLUDED_GUESTS} and ${MAX_GUESTS}`, () => {
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: 20 }).dayGuests).toBe(INCLUDED_GUESTS);
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: 140 }).dayGuests).toBe(MAX_GUESTS);
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: 140 }).extraDayGuests.count).toBe(MAX_GUESTS - INCLUDED_GUESTS);
   });
 
-  it('rounds down below the halfway point', () => {
-    const result = estimate('offPeak', 'midweek', { ...PRICING, cateringPerGuest: 96.2 }); // 4,000 + 9,620 = 13,620
-    expect(result.total).toBe(13500);
-  });
-
-  it('rounds up from the halfway point', () => {
-    const result = estimate('offPeak', 'midweek', { ...PRICING, cateringPerGuest: 96.25 }); // 4,000 + 9,625 = 13,625
-    expect(result.total).toBe(13750);
-  });
-
-  it('honours a different rounding step', () => {
-    const result = estimate('peak', 'saturday', { ...odd, roundTo: 1000 });
-    expect(result.total).toBe(19000);
+  it('treats fractions and nonsense sensibly', () => {
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: 60.6 }).dayGuests).toBe(61);
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: Number.NaN }).dayGuests).toBe(INCLUDED_GUESTS);
   });
 });
 
-describe('roundToNearest', () => {
-  it('leaves exact multiples alone', () => {
-    expect(roundToNearest(17500, 250)).toBe(17500);
+describe('evening guests', () => {
+  it('charges each evening guest', () => {
+    for (const count of [0, 1, 20, 50]) {
+      const result = estimate({ ...base('offPeak', 'friSun'), eveningGuests: count });
+      expect(result.eveningGuests).toEqual({ count, unit: EVENING_GUEST_PRICE, total: count * EVENING_GUEST_PRICE });
+      expect(result.total).toBe(6000 + count * EVENING_GUEST_PRICE);
+    }
   });
 
-  it('rounds to the nearest step, halves up', () => {
-    expect(roundToNearest(19124, 250)).toBe(19000);
-    expect(roundToNearest(19125, 250)).toBe(19250);
-    expect(roundToNearest(19126, 250)).toBe(19250);
+  it('never goes below 0', () => {
+    expect(estimate({ ...base('peak', 'saturday'), eveningGuests: -5 }).eveningGuests.count).toBe(0);
+  });
+});
+
+describe(`day and evening guests together: no more than ${MAX_GUESTS} (client, 2026-10-27)`, () => {
+  it('leaves room for whatever the day guests have not used', () => {
+    expect(eveningGuestLimit(INCLUDED_GUESTS)).toBe(MAX_GUESTS - INCLUDED_GUESTS);
+    expect(eveningGuestLimit(80)).toBe(MAX_GUESTS - 80);
+    expect(eveningGuestLimit(MAX_GUESTS)).toBe(0);
   });
 
-  it('handles zero', () => {
-    expect(roundToNearest(0, 250)).toBe(0);
+  it('works from the day guests as the estimate counts them', () => {
+    expect(eveningGuestLimit(20)).toBe(MAX_GUESTS - INCLUDED_GUESTS);
+    expect(eveningGuestLimit(140)).toBe(0);
+    expect(eveningGuestLimit(Number.NaN)).toBe(MAX_GUESTS - INCLUDED_GUESTS);
+  });
+
+  it('trims evening guests so the total never passes the limit', () => {
+    for (const [day, evening, kept] of [
+      [50, 250, 50],
+      [80, 30, 20],
+      [100, 20, 0],
+      [70, 30, 30],
+    ]) {
+      const result = estimate({ ...base('peak', 'saturday'), dayGuests: day, eveningGuests: evening });
+      expect(result.eveningGuests.count, `${day} + ${evening}`).toBe(kept);
+      expect(result.dayGuests + result.eveningGuests.count).toBeLessThanOrEqual(MAX_GUESTS);
+    }
+  });
+
+  it('keeps the day guests as chosen and trims the evening', () => {
+    expect(estimate({ ...base('peak', 'saturday'), dayGuests: 90, eveningGuests: 40 }).dayGuests).toBe(90);
+  });
+});
+
+describe('extras', () => {
+  it('adds the garden ceremony', () => {
+    const result = estimate({ ...base('peak', 'midweek'), gardenCeremony: true });
+    expect(result.gardenCeremony).toBe(GARDEN_CEREMONY_PRICE);
+    expect(result.total).toBe(6500 + GARDEN_CEREMONY_PRICE);
+  });
+
+  it('adds the dressing room the night before', () => {
+    const result = estimate({ ...base('peak', 'midweek'), dressingRoom: true });
+    expect(result.dressingRoom).toBe(DRESSING_ROOM_NIGHT_BEFORE_PRICE);
+    expect(result.total).toBe(6500 + DRESSING_ROOM_NIGHT_BEFORE_PRICE);
+  });
+
+  it('adds nothing when not chosen', () => {
+    const result = estimate(base('peak', 'midweek'));
+    expect(result.gardenCeremony).toBe(0);
+    expect(result.dressingRoom).toBe(0);
+  });
+});
+
+describe('a full wedding', () => {
+  it('peak Saturday, 80 day guests, 20 evening guests and both extras comes to £16,900', () => {
+    const result = estimate({ season: 'peak', day: 'saturday', dayGuests: 80, eveningGuests: 20, gardenCeremony: true, dressingRoom: true });
+    // 12,000 venue + 30 × 95 + 20 × 45 + 750 + 400
+    expect(result.total).toBe(16900);
+  });
+
+  it('totals exactly, without rounding', () => {
+    expect(estimate({ ...base('offPeak', 'midweek'), dayGuests: 53, eveningGuests: 1 }).total).toBe(4500 + 3 * 95 + 45);
+  });
+
+  it('uses whatever pricing it is passed, so new prices drop straight in', () => {
+    const result = estimate({ ...base('peak', 'saturday'), dayGuests: 60 }, { ...PRICING, extraDayGuestPrice: 100 });
+    expect(result.total).toBe(12000 + 10 * 100);
   });
 });
 
 describe('formatGBP', () => {
   it('formats whole pounds in en-GB style, without pence', () => {
-    expect(formatGBP(19000)).toBe('£19,000');
+    expect(formatGBP(18800)).toBe('£18,800');
     expect(formatGBP(95)).toBe('£95');
-  });
-});
-
-describe('selection handed to the enquiry form', () => {
-  it('round-trips through the query string', () => {
-    const search = selectionToSearch({ season: 'shoulder', day: 'friSun' });
-    expect(selectionFromSearch(search)).toEqual({ season: 'shoulder', day: 'friSun' });
-  });
-
-  it('ignores unknown or missing values', () => {
-    expect(selectionFromSearch('?season=winter&day=saturday')).toBeNull();
-    expect(selectionFromSearch('?season=peak')).toBeNull();
-    expect(selectionFromSearch('')).toBeNull();
-  });
-
-  it('keeps other query parameters', () => {
-    const search = selectionToSearch({ season: 'peak', day: 'midweek' }, '?enquiry=error');
-    const params = new URLSearchParams(search);
-    expect(params.get('enquiry')).toBe('error');
-    expect(params.get('season')).toBe('peak');
-    expect(params.get('day')).toBe('midweek');
-  });
-});
-
-describe('selectionFromDate (preferred date fills in season and day)', () => {
-  it('maps every month to its season', () => {
-    const seasons = Array.from({ length: 12 }, (_, i) => selectionFromDate(`2027-${String(i + 1).padStart(2, '0')}-15`)?.season);
-    expect(seasons).toEqual([
-      'offPeak', 'offPeak', 'offPeak', 'shoulder', 'peak', 'peak', 'peak', 'peak', 'peak', 'shoulder', 'offPeak', 'offPeak',
-    ]);
-  });
-
-  it('maps every day of the week to its pricing day', () => {
-    // 7–13 June 2027 runs Monday to Sunday.
-    const days = ['07', '08', '09', '10', '11', '12', '13'].map((d) => selectionFromDate(`2027-06-${d}`)?.day);
-    expect(days).toEqual(['midweek', 'midweek', 'midweek', 'midweek', 'friSun', 'saturday', 'friSun']);
-  });
-
-  it('handles season boundaries', () => {
-    expect(selectionFromDate('2027-04-30')).toEqual({ season: 'shoulder', day: 'friSun' });
-    expect(selectionFromDate('2027-05-01')).toEqual({ season: 'peak', day: 'saturday' });
-    expect(selectionFromDate('2027-10-31')).toEqual({ season: 'shoulder', day: 'friSun' });
-    expect(selectionFromDate('2027-11-01')).toEqual({ season: 'offPeak', day: 'midweek' });
-  });
-
-  it('ignores empty or malformed dates', () => {
-    expect(selectionFromDate('')).toBeNull();
-    expect(selectionFromDate('12/06/2027')).toBeNull();
-    expect(selectionFromDate('2027-13-01')).toBeNull();
-    expect(selectionFromDate('2027-02-30')).toBeNull();
   });
 });

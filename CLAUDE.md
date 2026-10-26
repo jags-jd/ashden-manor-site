@@ -3,7 +3,7 @@
 > This file is read by Claude Code at the start of every session.
 > Update it after every meaningful change. Don't trust memory — trust this file.
 
-**Last updated:** 2026-10-22 (scaffold)
+**Last updated:** 2026-10-27 (pricing tool merged with the enquiry)
 **Owner:** Jan Jagutin
 **Client:** Ashden Manor
 **Deadline:** Phase 1 live by **2026-10-24** (48 hours from kickoff)
@@ -28,8 +28,10 @@ This is **phase 1 of the real site**, not a prototype. Build it to production qu
 ## Venue facts (the only facts we have — do not invent others)
 
 - Exclusive use: the whole manor, gardens and dining room; no other guests checking in
-- Every wedding is for 100 guests through the day (fixed; couples don't choose a number)
-- Indoor ceremony room, Georgian dining room, manicured gardens
+- Weddings are for up to 100 guests in all, day and evening guests together (Jan, 2026-10-27). Venue hire includes 50; couples choose their number (client pricing, 2026-10-27)
+- Evening guests can join from 8pm
+- Indoor ceremony room, Georgian dining room, manicured gardens. The ceremony can be held in the gardens instead, as a paid option
+- The private dressing room can be booked the night before, as a paid option
 - In-house catering (food is a major strength)
 - Private dressing room
 - Full-day weddings: ceremony through to evening party
@@ -121,12 +123,11 @@ Don't add a UI framework, CMS, CSS framework or backend in phase 1. If something
 6. **Your day, start to finish:** ceremony → dining → evening party
 7. **Pets welcome:** short and warm
 8. **Not a hotel wedding:** a side-by-side, done with taste and without slagging off hotels
-9. **Price estimator:** see below
-10. **Enquiry form:** see below
-11. **FAQ:** the four worries plus practical questions, using `<details>`/`<summary>`
-12. **Footer:** logo, contact details (made-up placeholders for now), small print
+9. **Prices and enquiry, branded "The MatchMaker"** (Jan, 2026-10-27; the menu and header still say "Prices"): one tool (`#estimate`), five numbered steps on one screen; the last step (`#enquire`, "Happy with your match?") has an "Enquire now" button that opens a popup asking for names and email, so every estimate can become a lead (see below). There is no separate Enquire section (Jan, 2026-10-27).
+10. **FAQ:** the four worries plus practical questions, using `<details>`/`<summary>`
+11. **Footer:** logo, contact details (made-up placeholders for now), small print
 
-A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" button that jumps to the estimator, Jan's call 2026-10-22; labels in Cinzel small caps; the monogram is hidden below 24rem) that stays in place. Away from the very top it splits into a round Menu button (top left) and a "See prices" text pill (top right), so it rarely covers text (Jan, 2026-10-22). It turns see-through while scrolling and eases back to solid shortly after scrolling stops. Menu opens a full-screen `<dialog>` listing every section with its 01–10 marker. Smooth scroll that respects `prefers-reduced-motion`.
+A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" button that jumps to the estimator, Jan's call 2026-10-22; labels in Cinzel small caps; the monogram is hidden below 24rem) that stays in place. Away from the very top it splits into a round Menu button (top left) and a "See prices" text pill (top right), so it rarely covers text (Jan, 2026-10-22). It turns see-through while scrolling and eases back to solid shortly after scrolling stops. Menu opens a full-screen `<dialog>` listing every section with its 01–09 marker. Smooth scroll that respects `prefers-reduced-motion`.
 
 **Design principles (redesign, 2026-10-22, inspired by belgradearbor.rs):** restrained and image-led. Each section is mostly one large photo, one headline and a short paragraph, with lots of breathing room. Numbered markers (01, 02…) guide the eye. Information is broken into digestible pieces (tabs for the spaces, a horizontal timeline for the day). There's always a next step (See prices in the header, Enquire in the menu, a CTA in most sections, a closing invitation in the footer), but nothing pushes. Motion is deliberate, not everywhere.
 
@@ -134,54 +135,57 @@ A floating header (subtle dark pill: Menu, AM monogram, and a "See prices" butto
 
 ## Feature: price estimator
 
-**Purpose:** give couples a number before they've visited, which the client explicitly asked for.
+**Purpose:** give couples a price before they've visited, which the client explicitly asked for. These are the **client's real prices** (received 2026-10-27).
 
-**Inputs:**
-- Season: Peak (May–Sep) / Shoulder (Apr, Oct) / Off-peak (Nov–Mar)
-- Day: Saturday / Friday or Sunday / Monday–Thursday
+**Steps (numbered, all on one screen; Jan, 2026-10-27):**
+- 01 Season, labelled by months only: "June to September" / "April, May or October" / "November to March" (no peak/shoulder/off-peak wording on the page)
+- 02 Day: Saturday / Friday or Sunday / Monday–Thursday
+- 03 Guests: day guests 50 to 100 (50 are included in venue hire); evening guests, joining from 8pm, fill whatever is left. **Day and evening guests together never pass 100** (`MAX_GUESTS`; Jan, 2026-10-27). Day guests come first: raising them trims evening guests, and a line under the counters says how many evening places are left (`eveningGuestLimit()` in `estimate.ts`)
+- 04 Extras: ceremony in the gardens; private dressing room the night before
+- 05 Happy with your match? An "Enquire now" button opens the lead popup: names and email (Jan, 2026-10-27; see Feature: enquiry)
 
-**Guest count is fixed at 100.** There is no guest input. Every wedding is priced for 100 guests, and the estimator should say so plainly (e.g. "Priced for 100 guests").
+**Pricing (all in `src/data/pricing.ts`): venue hire for a full day of exclusive use, including 50 guests**
 
-**Output:** "Estimated from £X", with a simple breakdown (venue hire + catering for 100) and a line making clear it's a guide, not a quote. A button carries the selections into the enquiry form (prefilled).
-
-**Placeholder pricing (all in `src/data/pricing.ts`):**
-
-| | Saturday | Fri / Sun | Mon–Thu |
+| | Mon–Thu | Fri or Sun | Saturday |
 |---|---|---|---|
-| Peak | £9,500 | £8,000 | £6,000 |
-| Shoulder | £8,000 | £6,750 | £5,000 |
-| Off-peak | £6,500 | £5,500 | £4,000 |
+| Off-peak (Nov–Mar) | £4,500 | £6,000 | £8,000 |
+| Shoulder (Apr, May, Oct) | £5,500 | £7,500 | £10,000 |
+| Peak (Jun–Sep) | £6,500 | £9,000 | £12,000 |
 
-Plus catering at **£95 per guest × 100 guests = £9,500**. Round the total to the nearest £250.
+- **Extra day guests:** £95 each, beyond 50 and up to 100.
+- **Evening guests:** £45 each.
+- **Ceremony in the gardens:** £750.
+- **Dressing room the night before:** £400.
+- **Totals:** exact, with no rounding.
+- **Worked example:** peak Saturday, 80 day guests, 20 evening guests and both extras comes to **£16,900**.
 
-`pricing.ts` also exports `GUEST_COUNT = 100`. Use this constant everywhere the number appears (estimator, copy, form) rather than typing 100.
+**Output:** "Your estimate £X", updating as answers change, with an itemised breakdown that shows only the lines that apply, and a line making clear it's a guide, not a quote. On desktop the result card is sticky beside the steps, so the total is always in view; on phones a sticky bar at the bottom mirrors the total (aria-hidden) while the card sits after step 04.
 
 **Rules:**
-- **These figures are placeholders, not the client's prices.** `pricing.ts` exports `IS_PLACEHOLDER = true`. While it is true, the estimator shows a visible "Illustrative figures" note.
-- All numbers live in `pricing.ts` only, never hard-coded in components or copy.
-- Calculation logic lives in a pure function (`src/lib/estimate.ts`) with unit tests.
-- Use `Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })`.
+- `IS_PLACEHOLDER = false` (real prices), so there's no "Illustrative figures" note. Set it to true again only if figures become placeholders.
+- All numbers live in `pricing.ts` only, never hard-coded in components or copy. A content test enforces this for guest numbers and prices.
+- Calculation logic lives in a pure function (`estimate(choices)` in `src/lib/estimate.ts`) with unit tests.
+- Use `Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })` (`formatGBP`).
 - Must work with keyboard and screen readers. Announce updated totals with `aria-live="polite"`.
 
 ---
 
-## Feature: enquiry form
+## Feature: enquiry (step 05 of the price tool)
 
 **Phase 1: no backend. It must look and behave like a real form, but send nothing anywhere.**
 
-**Fields:**
-- Your names (required)
-- Email (required, validated)
-- Phone (optional)
-- Preferred date (optional) + "We're flexible on dates" checkbox
-- Season / day preference (prefilled from the estimator if used)
-- Message (optional)
-- ~~How did you hear about us?~~ Removed at Jan's request (2026-10-22).
+The pricing tool *is* the enquiry form (Jan, 2026-10-27): one `<form>` in `Estimate.astro`. The old separate form (`Enquire.astro`, with phone, preferred date, message and so on) was deleted.
+
+**Fields:** your names (required) and email (required, validated). Nothing else (Jan's call). The lead sent is `LeadData`: names, email, every choice from steps 01–04 and the total.
+
+**Popup (Jan, 2026-10-27):** Two buttons open it: "Enquire now" in step 05 and, on desktop only, one right under the total in the sticky card (under the total, not at the bottom, because the full breakdown can be taller than the window). a modal `<dialog id="lead-dialog">` *inside* the tool's `<form>`, so its fields and send button still belong to it. It shows the current total, takes focus to the names field on open, locks page scroll (`html.lead-open`), and closes with the × button, Escape or a backdrop click (never while sending). Focus returns to "Enquire now" on close. Closing without sending keeps what was typed; after a successful send, "Done" closes it and the next opening starts afresh.
 
 **Behaviour:**
-- Native HTML validation plus custom inline error messages on blur and submit; errors linked with `aria-describedby`; focus moves to the first error
-- Submit button shows a loading state, then a warm, on-brand success message
-- An error state exists and can be triggered (for testing and future use)
+- Custom inline error messages on blur (once touched) and on submit; errors linked with `aria-describedby`; focus moves to the first error and a status line says how many
+- Enter in a guest box only tidies the number; it never sends
+- Submit button shows a loading state (`aria-busy`, "Sending"), then a warm success message with the names and total; focus moves to its heading. "Done" closes the popup; the choices on the page stay as they were
+- The error state is triggered with `?enquiry=error` (`role="alert"`, everything typed is kept)
+- Without JavaScript the submit button stays disabled, so nothing can be posted
 - All submission goes through one function, `submitEnquiry(data)` in `src/lib/enquiry.ts`. In phase 1 it simulates a short delay and resolves successfully. **This is the single seam where a real handler plugs in later.**
 - **Do not** send data to any endpoint, third-party service or analytics, and don't log form contents to the console. Don't store it in localStorage.
 
@@ -319,24 +323,19 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - **No `once: true` in ScrollTriggers.** After a reload part-way down the page, `once` triggers fire and kill themselves during setup, which crashes ScrollTrigger's refresh ("reading 'end'" of undefined) and leaves motion half-initialised. Use `toggleActions: PLAY_ONCE` (in `motion.ts`) instead. Test changes with a reload at the bottom of the page.
 - **Header on scroll** (Jan, 2026-10-22): the full pill shows only at the very top (`scrollY` 80px or less). Anywhere else it splits into the corner buttons, scrolling up or down, and also right after a reload part-way down.
 - **Spaces tabs on desktop**: the two columns are bottom-aligned and the photo's height is capped (`100svh - --section-pad - 10rem`), so whenever the tabs are on screen the whole photo is too. That matters because the section is pinned and its content scrolls, so `scrollIntoView` can't help. Re-test at 1280×720 if the layout changes.
-- **Estimator (session 4, done 2026-10-22).**
-  - Data: `src/data/pricing.ts` holds `PRICING`, `SEASONS`, `DAYS`, `IS_PLACEHOLDER` and the defaults (Peak, Saturday).
-  - Maths: the pure functions in `src/lib/estimate.ts` (`estimate`, `roundToNearest`, `formatGBP` with whole pounds, `selectionToSearch` and `selectionFromSearch`).
-  - UI: `src/components/Estimate.astro` uses native radios, puts only the total in the `aria-live` region, and renders the default estimate on the server, so it works without JS.
-  - Phones repeat the total under the choices (aria-hidden), because the card sits below them.
-  - Tests: 24 in `tests/estimate.test.ts`, covering all nine combinations and the rounding (including halves).
-- **Enquiry form (session 5, done 2026-10-22).** It lives in `src/components/Enquire.astro`.
-  - Logic: pure validators in `src/lib/validation.ts` return error codes, and the messages are in `content.ts` (`enquire.errors`).
-  - Sending: `submitEnquiry()` in `src/lib/enquiry.ts` is the seam for a real handler. It waits 1.2s and reports success; `?enquiry=error` forces the failure state.
-  - Errors appear on blur (once a field has been typed in) and on submit, linked by `aria-describedby`. Focus goes to the first problem, and a status line says how many.
-  - States: loading (`aria-busy`, "Sending"), success (focus moves to "Thank you"), and failure (`role="alert"`, everything typed is kept).
-  - Without JavaScript the submit button stays disabled, so nothing can be posted.
-  - `IS_PREVIEW` is **false** (Jan, 2026-10-22: no preview note), even though phase 1 still sends nothing. Setting it to true shows a "Preview: this form isn't connected yet" note.
-  - Choosing a preferred date sets season and day: `selectionFromDate()` in `estimate.ts`, driven by `SEASON_BY_MONTH` and `DAY_BY_WEEKDAY` in `pricing.ts`. A polite status message announces the change.
-  - Verified keyboard-only in headless Edge. During use there were no non-GET requests, no request contained any typed data, nothing was written to the console, and storage was unchanged. Tests: `validation.test.ts` and `enquiry.test.ts` (the stub never calls fetch, sendBeacon, console or storage).
+- **Price tool and enquiry (merged 2026-10-27).** Everything is in `src/components/Estimate.astro`; there is no `Enquire.astro`, preferred date or URL hand-off any more.
+  - Data: `src/data/pricing.ts` holds the constants, `PRICING` and the defaults (peak Saturday, 50 guests, nothing else).
+  - Maths: `src/lib/estimate.ts` holds `estimate(choices)`, which clamps guests and returns line items and an exact total, plus `clampCount` and `formatGBP`.
+  - Lead: `src/lib/validation.ts` (`validateLead`, error codes; messages in `content.ts` under `estimate.details`) and `src/lib/enquiry.ts` (`submitEnquiry(LeadData)`, `wantsErrorState`).
+  - The section is **not pinned** (no `data-stack`), because the desktop result card is `position: sticky` and sticky doesn't work inside a pin.
+  - Only the total is in the `aria-live` region. Rows that don't apply are `hidden` (`.row[hidden]`).
+  - Phones: a sticky bar mirrors the total, so `html` has `scroll-padding-bottom: 5rem` below 56rem to keep focused controls clear of it (WCAG 2.4.11). The visually hidden radio and checkbox inputs cover the whole pill (`inset: 0; opacity: 0`) so focus scrolls the full pill into view.
+  - `#enquire` (step 05) is the target of the footer CTA, the food CTA and the menu's Enquire link; a content test guards this.
+  - Verified keyboard-only in headless Edge: no non-GET requests, no request containing typed data, nothing in the console, storage unchanged. Tests: `estimate.test.ts` (nine combinations, guest maths and clamping, extras, the 100-guest combined cap, the £16,900 worked example), `validation.test.ts`, `enquiry.test.ts` (the stub never calls fetch, sendBeacon, console or storage).
 - **`hidden` vs `display`.** A component style like `display: grid` overrides the `hidden` attribute. Add `[hidden] { display: none }` for anything you hide with it (form, success panel, tab list, errors).
 - **Height changes re-measure the scroll effects.** `motion.ts` watches `main` with a ResizeObserver and calls `ScrollTrigger.refresh()`, so form errors, the success message and FAQ answers don't throw the pinned sections out.
-- **Rolling-text buttons can't wrap.** Keep labels short (about 15 characters or fewer) or they overflow phones. That's why the estimator's button says "Enquire now".
+- **Rolling-text buttons can't wrap.** Keep labels short (about 15 characters or fewer) or they overflow phones. That's why the tool's button says "Send enquiry".
+- **Contrast audit after scrolling.** Sections that a later one has slid over recede to 25% opacity (the stack effect in `motion.ts`), so an audit run from the bottom of the page flags them. Scroll back to the top before measuring, as `audit.mjs` now does.
 - **Buttons follow the nearest background.** A light card inside a dark section (`.theme-linen` inside `.theme-olive`) gets the light-section button; the rules are in global.css.
 - **Footer is deliberately simple** (Jan): invitation and CTA, crest, contact, small print. No menu, photo strip or wordmark. Your day has no progress line.
 - **Hidden-until-animated content.** With motion on, the hero copy and photo start hidden (`html.motion`) and the preloader shows on the first visit of a session (`html.intro`). Both have CSS failsafes (3.5s and 4s) in case the script fails. Everything else is hidden by GSAP itself, so it stays visible without JavaScript.
@@ -350,6 +349,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
   - CSS is inlined.
   - Photos use `quality={62}` (the hero 60). Give `sizes` the real column width.
   - Lighthouse's simulated mobile LCP counts every request that starts before first paint, so avoid extra eager images and fonts. Details are in `docs/quality-pass-2026-10-22.md`.
+  - Motion setup runs as a queue of small tasks (one per headline or kind of effect) after the pins. Don't fold it back into one block, and don't add a manual `ScrollTrigger.refresh()` on load (ScrollTrigger already does one). Each cost about 150ms of blocking time on mobile (measured 2026-10-27).
 - **Headline reveals use blur and rise only, never opacity**, so an unrevealed headline never fails contrast.
 - **Placeholder prices are public-facing risk.** Never ship to the live domain with `IS_PLACEHOLDER = true` without Jan confirming that's acceptable.
 
@@ -380,7 +380,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 
 **Session 3 done (2026-10-22):** all 20 photos mapped in `src/data/photos.ts` (section placement, alt text; 3, 4, 10, 11 and 16 currently unused). All copy is in `content.ts`. Every section is a real component (`src/components/*.astro`) with real photos; the estimate and enquiry sections hold their heading and intro only, ready for sessions 4 and 5. `pricing.ts` has `GUEST_COUNT` only so far. Tests now also guard the copy (banned clichés, no typed guest count). Checked at 1440px and 375px.
 
-**Next session goal:** Pre-launch with Jan: answer Open Questions 8 (placeholder prices live), 11 (form that sends nothing) and 2 (made-up contact details), test on a real iPhone and Android, then push. The quality pass is done (2026-10-22); see `docs/quality-pass-2026-10-22.md`. Lighthouse: mobile 91/100/100/100, desktop 98/100/100/100.
+**Next session goal:** Pre-launch with Jan: answer Open Questions 11 (a lead form that sends nothing; now the only way to enquire) and 2 (made-up contact details), test the price tool on a real iPhone and Android, then push. Lighthouse after the merge (2026-10-27): mobile 91–92/100/100/100, desktop 98/100/100/100.
 
 **Hero photo:** photo 20 (`photos.manorFromAbove`), aerial view of the house and lawns. Jan to confirm. On desktop it's a two-column grid: copy beside the photo in an arch, over a blurred copy of the photo, with type and photo scaled by screen height so it fits from 1280×720 up. Phones show it full-bleed under a dark gradient.
 
@@ -388,7 +388,7 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 - Hero: dark, with the transparent Linen crest (desktop only; the header monogram covers phones).
 - Enquiry error state will be triggered by the URL flag `?enquiry=error`.
 - Section themes alternate light/dark (see `src/pages/index.astro`); hero and footer stay light because they carry the logo.
-- Menu lists all ten sections with their markers. A slim vertical counter at the left edge (desktop) shows the current section number, kept in the page margin so it never sits over content.
+- Menu lists all nine sections with their markers. A slim vertical counter at the left edge (desktop) shows the current section number, kept in the page margin so it never sits over content.
 - Pets has no photo, because none of the 20 shows a pet. It's a typographic interlude.
 - No newsletter sign-up, although the reference site has one. It would collect personal data, so it needs a backend and consent (Open Questions).
 - Until a domain exists, canonical/OG URLs use Vercel's production URL (`VERCEL_PROJECT_PRODUCTION_URL`).
@@ -411,17 +411,18 @@ Deploy: push to `main` → Vercel production. Branches → Vercel previews.
 
 ## Open questions
 
-1. **Real pricing**: rates, seasons, minimum spend, what catering includes
+1. **Real pricing**: received 2026-10-27 and in the estimator. Still unknown: whether there's a minimum spend.
 2. **Location and contact**: address, county, phone, email, directions. The footer currently shows made-up placeholders (see Venue facts). **Replace them before launch.**
 3. **Photos**: delivered 2026-10-22 and used as provided (Jan's call). Raised once on 2026-10-22: several look sourced from other venues and social media (e.g. a burned-in "tobelovedevents.com" credit on 1, social-media UI on 10), so web-use clearance and credits still need the client's confirmation. Full-resolution originals would also help: all files are 675–1080px wide and portrait.
 4. **Logo**: can the client supply an SVG or transparent PNG?
 5. **Form destination**: where should enquiries go in the next phase?
-6. **Guest numbers**: fixed at 100. Does that include evening-only guests, and is the price the same if a couple brings fewer?
+6. **Guest numbers**: answered 2026-10-27. 50 are included, extra day guests are £95 each and evening guests from 8pm £45 each, up to 100 guests in all. Still unknown: what venue hire covers for the 50 included guests (food and drink?).
 7. **Domain**: what domain will the site live on?
-8. **Placeholder prices on launch**: is the client happy to go live with illustrative figures, or should the estimator be hidden until real prices arrive? Note: every push to `main` deploys to production, so the `vercel.app` URL is effectively live from the first deploy.
-9. **Details left out of the copy** (they were `[TBC]` placeholders until Jan removed them on 2026-10-22; add them back as real copy once known): sample menus and what catering includes; earliest ceremony time and evening finish; house rules for pets; whether evening-only guests count towards the 100; whether the price changes for a smaller wedding; dietary requirements; email, phone and address (footer); village and county (hero).
+8. **Placeholder prices on launch**: resolved 2026-10-27. Real prices are in, and the "Illustrative figures" note is gone.
+9. **Details left out of the copy** (they were `[TBC]` placeholders until Jan removed them on 2026-10-22; add them back as real copy once known): sample menus and what catering includes; earliest ceremony time and evening finish; house rules for pets; dietary requirements; email, phone and address (footer); village and county (hero).
 10. **Newsletter**: the reference site has a sign-up form. Does the client want one? It would need a backend, consent wording and a privacy policy, so it's not for phase 1.
 11. **Live form that sends nothing**: Jan removed the preview note (2026-10-22). While the site is public and phase 1 sends nothing, a couple could believe they've enquired. Wire a real handler (Open Question 5) before sharing the site widely.
+12. **Evening guest limit**: resolved 2026-10-27. Day and evening guests together come to no more than 100.
 
 ---
 

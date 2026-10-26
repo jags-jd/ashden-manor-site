@@ -1,15 +1,24 @@
 /**
  * Pricing data. Every number used by the estimator, copy and form lives here, and nowhere else.
- *
- * THESE ARE PLACEHOLDER FIGURES, not the client's prices (see CLAUDE.md, Open Questions 1 and 8).
- * While IS_PLACEHOLDER is true the estimator shows an "Illustrative figures" note.
+ * These are the client's prices (received 2026-10-27).
  */
 
-/** Every wedding is for this many guests through the day. Use this constant, never a typed number. */
-export const GUEST_COUNT = 100;
+/** True while the figures are placeholders; the estimator then shows an "Illustrative figures" note. */
+export const IS_PLACEHOLDER = false;
 
-/** True until the client confirms real prices. Never ship to the live domain while true without Jan's OK. */
-export const IS_PLACEHOLDER = true;
+/** Venue hire includes this many guests. */
+export const INCLUDED_GUESTS = 50;
+/** Most guests a wedding can have, day and evening guests together (client, 2026-10-27). Use this constant, never a typed number. */
+export const MAX_GUESTS = 100;
+/** Each day guest beyond the included number, in pounds. */
+export const EXTRA_DAY_GUEST_PRICE = 95;
+
+/** Evening guests join from 8pm, in pounds each. */
+export const EVENING_GUEST_PRICE = 45;
+
+/** Optional extras, in pounds. */
+export const GARDEN_CEREMONY_PRICE = 750;
+export const DRESSING_ROOM_NIGHT_BEFORE_PRICE = 400;
 
 export const SEASONS = ['peak', 'shoulder', 'offPeak'] as const;
 export type Season = (typeof SEASONS)[number];
@@ -17,53 +26,38 @@ export type Season = (typeof SEASONS)[number];
 export const DAYS = ['saturday', 'friSun', 'midweek'] as const;
 export type Day = (typeof DAYS)[number];
 
-/** Season for each month, January first: peak May–Sep, shoulder Apr and Oct, off-peak Nov–Mar. */
-export const SEASON_BY_MONTH: readonly Season[] = [
-  'offPeak', 'offPeak', 'offPeak', // Jan, Feb, Mar
-  'shoulder', // Apr
-  'peak', 'peak', 'peak', 'peak', 'peak', // May–Sep
-  'shoulder', // Oct
-  'offPeak', 'offPeak', // Nov, Dec
-];
-
-/** Pricing day for each day of the week, Sunday first (as Date.getDay()). */
-export const DAY_BY_WEEKDAY: readonly Day[] = [
-  'friSun', // Sunday
-  'midweek', 'midweek', 'midweek', 'midweek', // Monday–Thursday
-  'friSun', // Friday
-  'saturday', // Saturday
-];
-
-/** Venue hire in pounds, by season and day. */
+/** Venue hire for a full day's exclusive use, in pounds, by season and day. Includes INCLUDED_GUESTS guests. */
 export type VenueHireTable = Record<Season, Record<Day, number>>;
 
 export const VENUE_HIRE: VenueHireTable = {
-  peak: { saturday: 9500, friSun: 8000, midweek: 6000 },
-  shoulder: { saturday: 8000, friSun: 6750, midweek: 5000 },
-  offPeak: { saturday: 6500, friSun: 5500, midweek: 4000 },
+  peak: { saturday: 12000, friSun: 9000, midweek: 6500 },
+  shoulder: { saturday: 10000, friSun: 7500, midweek: 5500 },
+  offPeak: { saturday: 8000, friSun: 6000, midweek: 4500 },
 };
 
-/** In-house catering, in pounds per guest. */
-export const CATERING_PER_GUEST = 95;
-
-/** Estimated totals are rounded to the nearest this many pounds. */
-export const ROUND_TO = 250;
-
 export interface Pricing {
-  guestCount: number;
   venueHire: VenueHireTable;
-  cateringPerGuest: number;
-  roundTo: number;
+  includedGuests: number;
+  maxGuests: number;
+  extraDayGuestPrice: number;
+  eveningGuestPrice: number;
+  gardenCeremonyPrice: number;
+  dressingRoomPrice: number;
 }
 
 /** Everything the estimate needs, in one object (tests can pass their own). */
 export const PRICING: Pricing = {
-  guestCount: GUEST_COUNT,
   venueHire: VENUE_HIRE,
-  cateringPerGuest: CATERING_PER_GUEST,
-  roundTo: ROUND_TO,
+  includedGuests: INCLUDED_GUESTS,
+  maxGuests: MAX_GUESTS,
+  extraDayGuestPrice: EXTRA_DAY_GUEST_PRICE,
+  eveningGuestPrice: EVENING_GUEST_PRICE,
+  gardenCeremonyPrice: GARDEN_CEREMONY_PRICE,
+  dressingRoomPrice: DRESSING_ROOM_NIGHT_BEFORE_PRICE,
 };
 
-/** The selection shown before a couple chooses anything: the most asked-about combination. */
+/** What the estimator shows before a couple chooses anything: the venue hire on its own. */
 export const DEFAULT_SEASON: Season = 'peak';
 export const DEFAULT_DAY: Day = 'saturday';
+export const DEFAULT_DAY_GUESTS = INCLUDED_GUESTS;
+export const DEFAULT_EVENING_GUESTS = 0;

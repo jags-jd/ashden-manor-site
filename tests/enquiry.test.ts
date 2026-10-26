@@ -1,15 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { submitEnquiry, wantsErrorState, type EnquiryData } from '../src/lib/enquiry';
+import { submitEnquiry, wantsErrorState, type LeadData } from '../src/lib/enquiry';
 
-const data: EnquiryData = {
+const lead: LeadData = {
   names: 'Sam & Alex',
   email: 'sam@example.com',
-  phone: '01632 960 482',
-  date: '2027-06-12',
-  flexible: true,
-  season: 'peak',
-  day: 'saturday',
-  message: 'A June wedding, please.',
+  choices: { season: 'peak', day: 'saturday', dayGuests: 80, eveningGuests: 20, gardenCeremony: true, dressingRoom: true },
+  total: 16900,
 };
 
 describe('submitEnquiry (phase 1 stub)', () => {
@@ -25,7 +21,7 @@ describe('submitEnquiry (phase 1 stub)', () => {
 
   it('waits, then reports success', async () => {
     let settled = false;
-    const pending = submitEnquiry(data).then((result) => {
+    const pending = submitEnquiry(lead).then((result) => {
       settled = true;
       return result;
     });
@@ -36,7 +32,7 @@ describe('submitEnquiry (phase 1 stub)', () => {
   });
 
   it('can be made to fail, for the error state', async () => {
-    const pending = submitEnquiry(data, { fail: true });
+    const pending = submitEnquiry(lead, { fail: true });
     await vi.runAllTimersAsync();
     await expect(pending).resolves.toEqual({ ok: false, reason: 'failed' });
   });
@@ -53,8 +49,8 @@ describe('submitEnquiry (phase 1 stub)', () => {
       vi.spyOn(console, method).mockImplementation(() => undefined),
     );
 
-    const before = structuredClone(data);
-    const pending = submitEnquiry(data);
+    const before = structuredClone(lead);
+    const pending = submitEnquiry(lead);
     await vi.runAllTimersAsync();
     await pending;
 
@@ -62,14 +58,14 @@ describe('submitEnquiry (phase 1 stub)', () => {
     expect(beacon).not.toHaveBeenCalled();
     expect(storage.setItem).not.toHaveBeenCalled();
     for (const spy of consoleSpies) expect(spy).not.toHaveBeenCalled();
-    expect(data).toEqual(before);
+    expect(lead).toEqual(before);
   });
 });
 
 describe('wantsErrorState', () => {
   it('is on only with ?enquiry=error', () => {
     expect(wantsErrorState('?enquiry=error')).toBe(true);
-    expect(wantsErrorState('?season=peak&enquiry=error')).toBe(true);
+    expect(wantsErrorState('?enquiry=error&other=1')).toBe(true);
     expect(wantsErrorState('')).toBe(false);
     expect(wantsErrorState('?enquiry=ok')).toBe(false);
   });
