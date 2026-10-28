@@ -225,6 +225,10 @@ const leadText = JSON.stringify({ errors: d.errors, summary: d.errorSummary, suc
 
         <p class="guide">{copy.guide}</p>
         {IS_PLACEHOLDER && <p class="placeholder-note">{copy.placeholderNote}</p>}
+        <!-- Phones only: the card sits below the steps there, so the button follows the breakdown. -->
+        <button class="button button-primary open-lead card-enquire-phone" type="button" aria-haspopup="dialog" aria-controls="lead-dialog" disabled data-open-lead>
+          <RollText text={d.open} />
+        </button>
       </div>
 
       <!-- Step 05. #enquire: every "Enquire" link on the page lands here. The button opens the lead popup. -->
@@ -554,6 +558,11 @@ const leadText = JSON.stringify({ errors: d.errors, summary: d.errorSummary, suc
     display: none;
     justify-self: center;
     margin-bottom: var(--space-2);
+  }
+
+  /* Phones only (hidden in the media query at the end). */
+  .card-enquire-phone {
+    justify-self: center;
   }
 
   .total {
@@ -931,6 +940,10 @@ const leadText = JSON.stringify({ errors: d.errors, summary: d.errorSummary, suc
 
     .card-enquire {
       display: inline-flex;
+    }
+
+    .card-enquire-phone {
+      display: none;
     }
   }
 </style>
